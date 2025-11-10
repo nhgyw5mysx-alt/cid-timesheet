@@ -3,13 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CID Timesheet v14 – FINAL</title>
+<title>TimeLatch</title>
 <style>
   body{font-family:Arial;background:#0b1e3d;color:white;margin:0;padding:20px 0;display:flex;flex-direction:column;align-items:center;min-height:100vh}
   .container{max-width:500px;width:100%;padding:0 20px;box-sizing:border-box}
-  .logo{text-align:center;padding:20px 0;background:#0a182e;margin-bottom:20px;border-radius:18px}
-  .logo img{width:80%;max-width:280px}
-  h1{margin:10px;font-size:28px}
+  .header{text-align:center;padding:20px 0;background:#0a182e;margin-bottom:20px;border-radius:18px}
+  h1{margin:10px;font-size:32px;font-weight:bold}
   .today-date{text-align:center;font-size:28px;font-weight:bold;color:#3498db;margin:15px 0}
   .time-inputs{display:flex;gap:15px;margin:20px 0}
   .time-field{flex:1;background:#1e3a5f;padding:28px;border-radius:18px;text-align:center}
@@ -28,9 +27,13 @@
 <body>
 <div class="container">
 
-  <div class="logo">
-    <img src="https://iili.io/3cQ9OJx.png" alt="CID Enterprises Vic">
-    <h1>CID TIMESHEET v14</h1>
+  <div class="header">
+    <h1>TimeLatch</h1>
+  </div>
+
+  <div class="section">
+    <h2 style="text-align:center;margin:0 0 15px 0">Your Name</h2>
+    <input type="text" id="user-name" placeholder="e.g. Daniel" value="">
   </div>
 
   <div class="today-date" id="today-date"></div>
@@ -65,132 +68,98 @@
   <div style="text-align:center;margin:30px 0"><h2>Your Week So Far</h2></div>
   <div id="output"></div>
 
-  <button class="copy" onclick="copyAll()">COPY TIMESHEET TO EMAIL</button>
+  <button class="copy" onclick="copyAll()">Copy Timesheet</button>
   <button class="delete-all" onclick="deleteAll()">DELETE ALL ENTRIES</button>
 
 </div>
 
 <script>
-  // MELBOURNE TIME – NEVER WRONG
+  // Melbourne time
   const now = new Date();
-  const options = {timeZone:'Australia/Melbourne', weekday:'long', day:'numeric', month:'long', year:'numeric'};
-  document.getElementById('today-date').innerText = now.toLocaleDateString('en-AU', options);
-  const today = now.toLocaleDateString('en-CA', {timeZone:'Australia/Melbourne'}); // YYYY-MM-DD
+  const melb = {timeZone:'Australia/Melbourne'};
+  document.getElementById('today-date').innerText = now.toLocaleDateString('en-AU', {...melb, weekday:'long', day:'numeric', month:'long', year:'numeric'});
+  const today = now.toLocaleDateString('en-CA', melb);
 
-  // RECOVER ALL OLD DATA + USE NEW KEY
-  let week = {};
-  const oldKeys = ['cid_v13_1','cid_v13','cid_v12','cid_v11','cid_v10_2','cid_v10_1','cid_v10','cid_v9'];
-  for(let k of oldKeys){
-    const data = localStorage.getItem(k);
-    if(data){ week = JSON.parse(data); localStorage.setItem('cid_v14', data); break; }
-  }
-  week = JSON.parse(localStorage.getItem('cid_v14') || '{}');
-  let customJobs = JSON.parse(localStorage.getItem('custom_jobs_v14') || '[]');
+  // Load data
+  let week = JSON.parse(localStorage.getItem('timelatch_week') || '{}');
+  let customJobs = JSON.parse(localStorage.getItem('timelatch_jobs') || '[]');
+  let userName = localStorage.getItem('timelatch_name') || '';
+  if(userName) document.getElementById('user-name').value = userName;
 
-  function save(){ localStorage.setItem('cid_v14', JSON.stringify(week)) }
-  function saveJobs(){ localStorage.setItem('custom_jobs_v14', JSON.stringify(customJobs)); renderJobs() }
+  function save(){ localStorage.setItem('timelatch_week', JSON.stringify(week)) }
+  function saveJobs(){ localStorage.setItem('timelatch_jobs', JSON.stringify(customJobs)); renderJobs() }
+  function saveName(){ localStorage.setItem('timelatch_name', document.getElementById('user-name').value.trim() || 'Your') }
 
   const jobSelect = document.getElementById('job');
-  const customInput = document.getElementById('custom');
+  jobSelect.onchange = () => document.getElementById('custom').style.display = jobSelect.value==='other' ? 'block' : 'none';
 
-  // Show/hide custom input
-  jobSelect.onchange = function(){
-    customInput.style.display = this.value === 'other' ? 'block' : 'none';
-    if(this.value !== 'other') customInput.value = '';
-  };
-
-  // Render saved locations with X button
   function renderJobs(){
-    let html = '';
-    customJobs.forEach((job, i) => {
-      html += `<div class="job-item">
-        <span>${job}</span>
-        <button class="delete-x" onclick="removeJob(${i})">X</button>
-      </div>`;
-    });
+    let html = customJobs.map((j,i) => 
+      `<div class="job-item"><span>${j}</span><button class="delete-x" onclick="customJobs.splice(${i},1);saveJobs()">X</button></div>`
+    ).join('');
     document.getElementById('saved-jobs').innerHTML = html || '<div style="color:#666;padding:20px;text-align:center">No custom locations yet</div>';
-    
-    // Rebuild dropdown
     while(jobSelect.options.length > 4) jobSelect.remove(4);
-    customJobs.forEach(job => {
-      const opt = new Option(job, job);
-      jobSelect.insertBefore(opt, jobSelect.lastElementChild);
-    });
+    customJobs.forEach(j => jobSelect.add(new Option(j,j), jobSelect.options[jobSelect.options.length-1]));
   }
 
-  window.removeJob = function(i){
-    customJobs.splice(i,1);
-    saveJobs();
-  };
-
-  function timeToMins(t){ const [h,m] = t.split(':').map(Number); return h*60 + m; }
+  function timeToMins(t){ const [h,m]=t.split(':').map(Number); return h*60+m; }
 
   function addDay(){
+    saveName();
     let job = jobSelect.value;
-    if(job === 'other'){
-      job = customInput.value.trim();
-      if(!job){ alert('Type a location first!'); return; }
-      if(!customJobs.includes(job)){
-        customJobs.unshift(job);
-        saveJobs();
-      }
+    if(job==='other'){
+      job = document.getElementById('custom').value.trim();
+      if(!job){ alert('Type a location!'); return; }
+      if(!customJobs.includes(job)){ customJobs.unshift(job); saveJobs(); }
     }
+    const notes = document.getElementById('notes').value.trim();
+    if(!notes){ alert('Add notes!'); return; }
 
     const start = document.getElementById('start-time').value || "07:00";
     const finish = document.getElementById('finish-time').value || "15:30";
-    const notes = document.getElementById('notes').value.trim();
-    if(!notes){ alert('Add some notes!'); return; }
-
-    // Time clash check
     const newStart = timeToMins(start);
     const newEnd = timeToMins(finish);
+
     if(week[today]){
       for(let e of week[today]){
-        const eStart = timeToMins(e.times.split(' – ')[0]);
-        const eEnd = timeToMins(e.times.split(' – ')[1]);
-        if(newEnd > eStart && newStart < eEnd){
-          alert('TIME CLASH! Already have ' + e.times);
-          return;
+        if(newEnd > timeToMins(e.times.split(' – ')[0]) && newStart < timeToMins(e.times.split(' – ')[1])){
+          alert('TIME CLASH! Already have ' + e.times); return;
         }
       }
     }
 
     const raw = (timeToMins(finish) - timeToMins(start)) / 60;
-    const isSat = now.getDay()===6;
-    const paid = (isSat || raw>8) ? raw : raw-0.5;
+    const paid = (now.getDay()===6 || raw>8) ? raw : raw-0.5;
 
-    const entry = {times: start+' – '+finish, paid: paid.toFixed(2), notes: notes, job: job};
+    const entry = {times: start+' – '+finish, paid: paid.toFixed(2), notes, job};
     if(!week[today]) week[today] = [];
     week[today].push(entry);
-    save();
-    render();
+    save(); render();
 
-    // Reset form
     document.getElementById('notes').value = '';
     jobSelect.value = 'CSL Broadmeadows';
-    customInput.style.display = 'none';
-    customInput.value = '';
+    document.getElementById('custom').style.display = 'none';
+    document.getElementById('custom').value = '';
     alert('ENTRY ADDED!');
   }
 
   function render(){
     let html = '';
     Object.keys(week).sort().reverse().forEach(date => {
-      const dayName = new Date(date+'T12:00:00').toLocaleDateString('en-AU',{timeZone:'Australia/Melbourne',weekday:'long',day:'numeric',month:'short'});
+      const dayName = new Date(date+'T12:00:00').toLocaleDateString('en-AU',{...melb,weekday:'long',day:'numeric',month:'short'});
       week[date].forEach(e => {
-        html += `<div class="day">
-          <b>${dayName}</b> | ${e.job}<br>
-          ${e.times}   <b>${e.paid} hrs</b><pre>${e.notes}</pre>
-        </div>`;
+        html += `<div class="day"><b>${dayName}</b> | ${e.job}<br>${e.times}   <b>${e.paid} hrs</b><pre>${e.notes}</pre></div>`;
       });
     });
     document.getElementById('output').innerHTML = html || '<div style="text-align:center;padding:50px;color:#666">No entries yet</div>';
   }
 
   function copyAll(){
-    let text = `CID TIMESHEET – Week ending ${now.toLocaleDateString('en-AU',{timeZone:'Australia/Melbourne',weekday:'long', day:'numeric', month:'long', year:'numeric'})}\n\n`;
+    saveName();
+    const name = document.getElementById('user-name').value.trim() || 'Your';
+    let text = `${name}’s Timesheet – Week ending ${now.toLocaleDateString('en-AU',{...melb,weekday:'long', day:'numeric', month:'long', year:'numeric'})}\n\n`;
     Object.keys(week).sort().reverse().forEach(date => {
-      const dayName = new Date(date+'T12:00:00').toLocaleDateString('en-AU',{timeZone:'Australia/Melbourne',weekday:'long',day:'numeric',month:'short'});
+      const dayName = new Date(date+'T12:00:00').toLocaleDateString('en-AU',{...melb,weekday:'long',day:'numeric',month:'short'});
       week[date].forEach(e => {
         text += `${dayName} | ${e.job}\n${e.times}   ${e.paid} hrs\n${e.notes}\n\n`;
       });
