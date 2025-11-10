@@ -74,13 +74,18 @@
 </div>
 
 <script>
-  // Melbourne time
+  // MELBOURNE TIME + WEEK ENDING = LAST MONDAY
   const now = new Date();
   const melb = {timeZone:'Australia/Melbourne'};
   document.getElementById('today-date').innerText = now.toLocaleDateString('en-AU', {...melb, weekday:'long', day:'numeric', month:'long', year:'numeric'});
+
+  // FIND LAST MONDAY
+  const lastMonday = new Date(now);
+  lastMonday.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+  const weekEnding = lastMonday.toLocaleDateString('en-AU', {...melb, weekday:'long', day:'numeric', month:'long', year:'numeric'});
+
   const today = now.toLocaleDateString('en-CA', melb);
 
-  // Load data
   let week = JSON.parse(localStorage.getItem('timelatch_week') || '{}');
   let customJobs = JSON.parse(localStorage.getItem('timelatch_jobs') || '[]');
   let userName = localStorage.getItem('timelatch_name') || '';
@@ -157,7 +162,7 @@
   function copyAll(){
     saveName();
     const name = document.getElementById('user-name').value.trim() || 'Your';
-    let text = `${name}’s Timesheet – Week ending ${now.toLocaleDateString('en-AU',{...melb,weekday:'long', day:'numeric', month:'long', year:'numeric'})}\n\n`;
+    let text = `${name}’s Timesheet – Week ending ${weekEnding}\n\n`;
     Object.keys(week).sort().reverse().forEach(date => {
       const dayName = new Date(date+'T12:00:00').toLocaleDateString('en-AU',{...melb,weekday:'long',day:'numeric',month:'short'});
       week[date].forEach(e => {
