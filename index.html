@@ -3,29 +3,34 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CID Timesheet v11 – CLEAN</title>
+<title>CID Timesheet v13</title>
 <style>
-  body{font-family:Arial;background:#0b1e3d;color:white;margin:0;padding:0}
-  .logo{text-align:center;padding:20px 0;background:#0a182e}
-  .logo img{width:80%;max-width:320px}
+  body{font-family:Arial;background:#0b1e3d;color:white;margin:0;padding:20px 0;display:flex;flex-direction:column;align-items:center;min-height:100vh}
+  .container{max-width:500px;width:100%;padding:0 20px;box-sizing:border-box}
+  .logo{text-align:center;padding:20px 0;background:#0a182e;margin-bottom:20px;border-radius:18px}
+  .logo img{width:80%;max-width:280px}
   h1{margin:10px;font-size:28px}
   .today-date{text-align:center;font-size:28px;font-weight:bold;color:#3498db;margin:15px 0}
-  .time-inputs{display:flex;gap:15px;margin:20px}
+  .time-inputs{display:flex;gap:15px;margin:20px 0}
   .time-field{flex:1;background:#1e3a5f;padding:28px;border-radius:18px;text-align:center}
   .time-field input{width:100%;background:transparent;border:none;color:white;font-size:36px;font-weight:bold;text-align:center}
-  .section{margin:20px;background:rgba(255,255,255,0.1);border-radius:18px;padding:20px}
+  .section{background:rgba(255,255,255,0.1);border-radius:18px;padding:20px;margin:20px 0}
   select,input,textarea{width:100%;padding:16px;background:rgba(255,255,255,0.2);border:none;border-radius:14px;color:white;font-size:18px;margin:10px 0;box-sizing:border-box}
   button{background:#3498db;color:white;padding:20px;border:none;border-radius:14px;font-size:21px;margin:10px 0;width:100%;font-weight:bold}
   .copy{background:#27ae60;padding:25px;font-size:24px}
   .delete-all{background:#c0392b;padding:25px;font-size:24px}
-  .day{background:rgba(255,255,255,0.1);padding:22px;margin:15px;border-radius:18px}
+  .day{background:rgba(255,255,255,0.1);padding:22px;margin:15px 0;border-radius:18px;width:100%;box-sizing:border-box}
   pre{background:rgba(0,0,0,0.3);padding:16px;border-radius:12px;white-space:pre-wrap;font-size:17px}
+  .job-item{display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,0.1);padding:14px;margin:8px 0;border-radius:12px}
+  .delete-job{background:#e74c3c;color:white;border:none;padding:8px 16px;border-radius:8px;font-size:14px}
 </style>
 </head>
 <body>
+<div class="container">
+
   <div class="logo">
     <img src="https://iili.io/3cQ9OJx.png" alt="CID Enterprises Vic">
-    <h1>CID TIMESHEET PRO v11</h1>
+    <h1>CID TIMESHEET PRO v13</h1>
   </div>
 
   <div class="today-date" id="today-date"></div>
@@ -36,124 +41,7 @@
   </div>
 
   <div class="section">
-    <h2>Job Location</h2>
+    <h2 style="text-align:center;margin:0 0 15px 0">Job Location</h2>
     <select id="job" onchange="toggleCustom(this.value)">
       <option value="CSL Broadmeadows">CSL Broadmeadows</option>
-      <option value="CSL Tullamarine">CSL Tullamarine</option>
-      <option value="CSL Melbourne">CSL Melbourne</option>
-      <option value="other">+ Add Custom Location</option>
-    </select>
-    <input type="text" id="custom" placeholder="e.g. Fatigue Hut" style="display:none">
-  </div>
-
-  <div class="section">
-    <h2>Today's Notes</h2>
-    <textarea id="notes" placeholder="Type everything here..." style="height:250px"></textarea>
-    <button onclick="addDay()">ADD TODAY'S ENTRY</button>
-  </div>
-
-  <div style="text-align:center;margin:30px 0"><h2>Your Week So Far</h2></div>
-  <div id="output"></div>
-
-  <button class="copy" onclick="copyAll()">COPY TIMESHEET TO EMAIL</button>
-  <button class="delete-all" onclick="deleteAll()">DELETE ALL ENTRIES</button>
-
-<script>
-  document.getElementById('today-date').innerText = new Date().toLocaleDateString('en-AU', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
-
-  let week = JSON.parse(localStorage.getItem('cid_v11')) || {};
-  let customJobs = JSON.parse(localStorage.getItem('custom_jobs')) || [];
-
-  function save(){localStorage.setItem('cid_v11', JSON.stringify(week))}
-  function saveJobs(){localStorage.setItem('custom_jobs', JSON.stringify(customJobs))}
-
-  const jobSelect = document.getElementById('job');
-  customJobs.forEach(job => {
-    const opt = document.createElement('option');
-    opt.value = job; opt.textContent = job;
-    jobSelect.insertBefore(opt, jobSelect.lastElementChild);
-  });
-
-  function toggleCustom(val){
-    document.getElementById('custom').style.display = val==='other' ? 'block' : 'none';
-  }
-
-  function timeToMins(t){ const [h,m] = t.split(':').map(Number); return h*60 + m; }
-
-  function addDay(){
-    const date = new Date().toISOString().slice(0,10);
-    const start = document.getElementById('start-time').value || "07:00";
-    const finish = document.getElementById('finish-time').value || "15:30";
-    let job = document.getElementById('job').value;
-    if(job==='other'){
-      job = document.getElementById('custom').value.trim();
-      if(!job){alert('Type custom location');return;}
-      if(!customJobs.includes(job)){
-        customJobs.unshift(job);
-        if(customJobs.length>10) customJobs.pop();
-        saveJobs();
-        location.reload();
-      }
-    }
-    const notes = document.getElementById('notes').value.trim();
-    if(!notes){alert('Add some notes!');return;}
-
-    const newStart = timeToMins(start);
-    const newEnd = timeToMins(finish);
-    if(week[date]){
-      for(let e of week[date]){
-        if(!(newEnd <= timeToMins(e.times.split(' – ')[0]) || newStart >= timeToMins(e.times.split(' – ')[1]))){
-          alert('TIME CLASH! Already have ' + e.times);
-          return;
-        }
-      }
-    }
-
-    const raw = (timeToMins(finish) - timeToMins(start)) / 60;
-    const isSat = new Date().getDay()===6;
-    const paid = (isSat || raw>8) ? raw : raw-0.5;
-
-    const entry = {times: start+' – '+finish, paid: paid.toFixed(2), notes: notes, job: job};
-    if(!week[date]) week[date] = [];
-    week[date].push(entry);
-    save(); render();
-
-    document.getElementById('notes').value='';
-    toggleCustom('hide');
-    alert('ENTRY ADDED!');
-  }
-
-  function render(){
-    let html = '';
-    Object.keys(week).sort().reverse().forEach(date => {
-      const dayName = new Date(date).toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'short'});
-      week[date].forEach(e => {
-        html += `<div class="day">
-          <b>${dayName}</b> | ${e.job}<br>
-          ${e.times}   <b>${e.paid} hrs</b><pre>${e.notes}</pre>
-        </div>`;
-      });
-    });
-    document.getElementById('output').innerHTML = html || '<div style="text-align:center;padding:50px;color:#666">No entries yet</div>';
-  }
-
-  function copyAll(){
-    let text = `CID TIMESHEET – Week ending ${new Date().toLocaleDateString('en-AU',{weekday:'long', day:'numeric', month:'long', year:'numeric'})}\n\n`;
-    Object.keys(week).sort().reverse().forEach(date => {
-      const dayName = new Date(date).toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'short'});
-      week[date].forEach(e => {
-        text += `${dayName} | ${e.job}\n${e.times}   ${e.paid} hrs\n${e.notes}\n\n`;
-      });
-    });
-    navigator.clipboard.writeText(text);
-    alert('COPIED! Paste into email → send → paid');
-  }
-
-  function deleteAll(){
-    if(confirm('DELETE EVERYTHING?')){ week = {}; save(); render(); alert('ALL GONE'); }
-  }
-
-  render();
-</script>
-</body>
-</html>
+      <option value="CS
