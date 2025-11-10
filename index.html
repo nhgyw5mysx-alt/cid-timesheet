@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CID Timesheet v10 – FINAL</title>
+<title>CID Timesheet v10.1 – DISPLAY FIXED</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <style>
   body{font-family:Arial;background:#0b1e3d;color:white;margin:0;padding:0}
@@ -19,7 +19,7 @@
   button{background:#3498db;color:white;padding:20px;border:none;border-radius:14px;font-size:21px;margin:10px 0;width:100%;font-weight:bold}
   .camera-btn{background:#e67e22}
   .copy{background:#27ae60;padding:25px;font-size:24px}
-  .delete-all{background:#c0392b !important;padding:25px;font-size:24px}
+  .delete-all{background:#c0392b;padding:25px;font-size:24px}
   .day{background:rgba(255,255,255,0.1);padding:22px;margin:15px;border-radius:18px}
   pre{background:rgba(0,0,0,0.3);padding:16px;border-radius:12px;white-space:pre-wrap;font-size:17px}
   .photo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:10px;margin:15px 0}
@@ -29,7 +29,7 @@
 <body>
   <div class="logo">
     <img src="https://iili.io/3cQ9OJx.png" alt="CID Enterprises Vic">
-    <h1>CID TIMESHEET PRO v10</h1>
+    <h1>CID TIMESHEET PRO v10.1</h1>
   </div>
 
   <div class="today-date" id="today-date"></div>
@@ -61,7 +61,7 @@
     <textarea id="notes" placeholder="" style="height:200px"></textarea>
     
     <button class="camera-btn" onclick="document.getElementById('photo-input').click()">
-      Add Photo (from Camera Roll)
+      Add Photo (Camera Roll)
     </button>
     <div id="photo-preview" class="photo-grid"></div>
     <input type="file" id="photo-input" accept="image/*" multiple style="display:none">
@@ -82,11 +82,12 @@
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
   });
 
-  let week = JSON.parse(localStorage.getItem('cid_v10')) || {};
+  let week = JSON.parse(localStorage.getItem('cid_v10_1')) || {};
   let customJobs = JSON.parse(localStorage.getItem('custom_jobs')) || [];
-  let todayPhotos = [];   // stores actual File objects
+  let todayPhotos = [];        // File objects
+  let todayPhotoBlobs = [];    // DataURLs for preview
 
-  function save(){localStorage.setItem('cid_v10', JSON.stringify(week))}
+  function save(){localStorage.setItem('cid_v10_1', JSON.stringify(week))}
   function saveJobs(){localStorage.setItem('custom_jobs', JSON.stringify(customJobs))}
 
   // Load custom jobs
@@ -101,13 +102,14 @@
     document.getElementById('custom').style.display = val==='other' ? 'block' : 'none';
   }
 
-  // PHOTO UPLOAD FROM CAMERA ROLL
+  // PHOTO PICKER
   document.getElementById('photo-input').addEventListener('change', function(e){
     const files = e.target.files;
     for(let file of files){
       todayPhotos.push(file);
       const reader = new FileReader();
       reader.onload = ev => {
+        todayPhotoBlobs.push(ev.target.result);
         const img = document.createElement('img');
         img.src = ev.target.result;
         img.className = 'photo-thumb';
@@ -117,4 +119,117 @@
     }
   });
 
-  function timeToMins(t){ const [h,m] = t.split(':').map(Number); return h*60
+  function timeToMins(t){ const [h,m] = t.split(':').map(Number); return h*60 + m; }
+
+  function addDay(){
+    const date = new Date().toISOString().slice(0,10);
+    const start = document.getElementById('start-time').value || "07:00";
+    const finish = document.getElementById('finish-time').value || "15:30";
+    let job = document.getElementById('job').value;
+    if(job==='other'){
+      job = document.getElementById('custom').value.trim();
+      if(!job){alert('Type custom location');return;}
+      if(!customJobs.includes(job)){
+        customJobs.unshift(job);
+        if(customJobs.length>10) customJobs.pop();
+        saveJobs();
+        location.reload();
+      }
+    }
+    const notes = document.getElementById('notes').value.trim();
+    if(!notes && todayPhotos.length===0){alert('Add notes or photo!');return;}
+
+    // Time clash check
+    const newStart = timeToMins(start);
+    const newEnd = timeToMins(finish);
+    if(week[date]){
+      for(let entry of week[date]){
+        const eStart = timeToMins(entry.times.split(' – ')[0]);
+        const eEnd = timeToMins(entry.times.split(' – ')[1]);
+        if(!(newEnd <= eStart || newStart >= eEnd)){
+          alert('TIME CLASH! Already have ' + entry.times);
+          return;
+        }
+      }
+    }
+
+    const [h1,m1]=start.split(':').map(Number);
+    const [h2,m2]=finish.split(':').map(Number);
+    let raw = (h2+m2/60)-(h1+m1/60);
+    const isSat = new Date().getDay()===6;
+    const paid = (isSat || raw>8) ? raw : raw-0.5;
+
+    const entry = {
+      times: start+' – '+finish,
+      paid: paid.toFixed(2),
+      notes: notes,
+      job: job,
+      photoBlobs: todayPhotoBlobs.slice(),  // for preview
+      photoFiles: todayPhotos.map(f => ({name:f.name, type:f.type, size:f.size}))
+    };
+
+    if(!week[date]) week[date] = [];
+    week[date].push(entry);
+    save(); render();
+
+    // RESET
+    document.getElementById('notes').value='';
+    document.getElementById('photo-preview').innerHTML='';
+    todayPhotos = [];
+    todayPhotoBlobs = [];
+    document.getElementById('photo-input').value='';
+    toggleCustom('hide');
+    alert('ENTRY ADDED!');
+  }
+
+  function render(){
+    let html = '';
+    Object.keys(week).sort().reverse().forEach(date => {
+      const dayName = new Date(date).toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'short'});
+      week[date].forEach(e => {
+        let photoHtml = '';
+        if(e.photoBlobs && e.photoBlobs.length>0){
+          photoHtml = '<div class="photo-grid">';
+          e.photoBlobs.forEach(src => {
+            photoHtml += `<img src="${src}" class="photo-thumb">`;
+          });
+          photoHtml += '</div>';
+        }
+        html += `<div class="day">
+          <b>${dayName}</b> | ${e.job}<br>
+          ${e.times}   <b>${e.paid} hrs</b><pre>${e.notes}</pre>${photoHtml}
+        </div>`;
+      });
+    });
+    document.getElementById('output').innerHTML = html || '<div style="text-align:center;padding:50px;color:#666">No entries yet – add one above!</div>';
+  }
+
+  function copyAll(){
+    let text = `CID TIMESHEET v10.1 – Week ending ${new Date().toLocaleDateString('en-AU',{weekday:'long', day: 'numeric', month:'long', year:'numeric'})}\n\n`;
+    Object.keys(week).sort().reverse().forEach(date => {
+      const dayName = new Date(date).toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'short'});
+      week[date].forEach(e => {
+        text += `${dayName} | ${e.job}\n${e.times}   ${e.paid} hrs\n${e.notes}\n`;
+        if(e.photoFiles && e.photoFiles.length>0){
+          text += `(Photos: ${e.photoFiles.map(p=>p.name).join(', ')})\n`;
+        }
+        text += '\n';
+      });
+    });
+    navigator.clipboard.writeText(text);
+    alert('COPIED! Paste into Outlook/Gmail → photos attach automatically');
+  }
+
+  function deleteAll(){
+    if(confirm('DELETE EVERYTHING?')){
+      week = {};
+      save();
+      render();
+      alert('ALL GONE');
+    }
+  }
+
+  render();
+</script>
+</body>
+</html>
