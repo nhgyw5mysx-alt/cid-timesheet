@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CID Timesheet v8.2 – PHOTOS FIXED</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+  body{font-family:Arial;background:#0b1e3d;color:white;margin:0;padding:0}
+  .logo{text-align:center;padding:20px 0;background:#0a182e}
+  .logo img{width:80%;max-width:320px}
+  h1{margin:10px;font-size:28px}
+  .today-date{text-align:center;font-size:28px;font-weight:bold;color:#3498db;margin:15px 0}
+  .time-inputs{display:flex;gap:15px;margin:20px}
+  .time-field{flex:1;background:#1e3a5f;padding:28px;border-radius:18px;text-align:center}
+  .time-field input{width:100%;background:transparent;border:none;color:white;font-size:36px;font-weight:bold;text-align:center}
+  .section{margin:20px;background:rgba(255,255,255,0.1);border-radius:18px;padding:20px}
+  select,input,textarea{width:100%;padding:16px;background:rgba(255,255,255,0.2);border:none;border-radius:14px;color:white;font-size:18px;margin:10px 0;box-sizing:border-box}
+  button{background:#3498db;color:white;padding:20px;border:none;border-radius:14px;font-size:21px;margin:10px 0;width:100%;font-weight:bold}
+  .camera-btn{background:#e67e22}
+  .copy{background:#27ae60;padding:25px;font-size:24px}
+  .day{background:rgba(255,255,255,0.1);padding:22px;margin:15px;border-radius:18px}
+  pre{background:rgba(0,0,0,0.3);padding:16px;border-radius:12px;white-space:pre-wrap;font-size:17px}
+  .photo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:10px;margin:15px 0}
+  .photo-thumb{border:3px solid #3498db;border-radius:12px;max-width:100%;height:auto}
+</style>
+</head>
+<body>
+  <div class="logo">
+    <img src="https://iili.io/3cQ9OJx.png" alt="CID Enterprises Vic">
+    <h1>CID TIMESHEET PRO</h1>
+  </div>
+
+  <div class="today-date" id="today-date"></div>
+
+  <div class="time-inputs">
+    <div class="time-field">
+      <div style="font-size:18px;margin-bottom:8px">START</div>
+      <input type="time" id="start-time" value="07:00">
+    </div>
+    <div class="time-field">
+      <div style="font-size:18px;margin-bottom:8px">FINISH</div>
+      <input type="time" id="finish-time" value="15:30">
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Job Location</h2>
+    <select id="job" onchange="toggleCustom(this.value)">
+      <option value="CSL Broadmeadows">CSL Broadmeadows</option>
+      <option value="CSL Tullamarine">CSL Tullamarine</option>
+      <option value="CSL Melbourne">CSL Melbourne</option>
+      <option value="other">+ Add Custom Location</option>
+    </select>
+    <input type="text" id="custom" placeholder="e.g. Fatigue Hut" style="display:none">
+  </div>
+
+  <div class="section">
+    <h2>Today's Notes</h2>
+    <textarea id="notes" placeholder="" style="height:200px"></textarea>
+    
+    <button class="camera-btn" onclick="takePhoto()">Add Photo</button>
+    <div id="photo-preview" class="photo-grid"></div>
+    <input type="file" id="photo-input" accept="image/*" capture="environment" style="display:none">
+    
+    <button onclick="addDay()">ADD TODAY'S ENTRY</button>
+  </div>
+
+  <div style="text-align:center;margin:30px 0">
+    <h2>Your Week So Far</h2>
+  </div>
+  <div id="output"></div>
+
+  <button class="copy" onclick="copyAll()">COPY TIMESHEET TO EMAIL</button>
+
+<script>
+  document.getElementById('today-date').innerText = new Date().toLocaleDateString('en-AU', {
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+  });
+
+  let week = JSON.parse(localStorage.getItem('cid_v8_2')) || {};
+  let customJobs = JSON.parse(localStorage.getItem('custom_jobs')) || [];
+  let todayPhotos = [];
+
+  function save(){localStorage.setItem('cid_v8_2', JSON.stringify(week))}
+  function saveJobs(){localStorage.setItem('custom_jobs', JSON.stringify(customJobs))}
+
+  const jobSelect = document.getElementById('job');
+  customJobs.forEach(job => {
+    const opt = document.createElement('option');
+    opt.value = job; opt.textContent = job;
+    jobSelect.insertBefore(opt, jobSelect.lastElementChild);
+  });
+
+  function toggleCustom(val){
+    document.getElementById('custom').style.display = val==='other' ? 'block' : 'none';
+  }
+
+  function takePhoto(){
+    document.getElementById('photo-input').click();
+  }
+
+  document.getElementById('photo-input').addEventListener('change', function(e){
+    const file = e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = function(ev){
+      const dataURL = ev.target.result;
+      todayPhotos.push(dataURL);
+      const img = document.createElement('img');
+      img.src = dataURL;
+      img.className = 'photo-thumb';
+      document.getElementById('photo-preview').appendChild(img);
+    }
+    reader.readAsDataURL(file);
+  });
+
+  function addDay(){
+    const date = new Date().toISOString().slice(0,10);
+    const start = document.getElementById('start-time').value || "07:00";
+    const finish = document.getElementById('finish-time').value || "15:30";
+    let job = document.getElementById('job').value;
+    if(job==='other'){
+      job = document.getElementById('custom').value.trim();
+      if(!job){alert('Type custom location');return;}
+      if(!customJobs.includes(job)){
+        customJobs.unshift(job);
+        if(customJobs.length>10) customJobs.pop();
+        saveJobs();
+        location.reload();
+      }
+    }
+    const notes = document.getElementById('notes').value.trim();
+    if(!notes && todayPhotos.length===0){alert('Add notes or photo!');return;}
+
+    const [h1,m1]=start.split(':').map(Number);
+    const [h2,m2]=finish.split(':').map(Number);
+    let raw = (h2+m2/60)-(h1+m1/60);
+    const isSat = new Date().getDay()===6;
+    const paid = (isSat || raw>8) ? raw : raw-0.5;
+
+    week[date] = {
+      times: start+' – '+finish,
+      paid: paid.toFixed(2),
+      notes: notes,
+      job: job,
+      photos: todayPhotos.slice() // <-- THIS FIXED THE PHOTO BUG
+    };
+    save(); render();
+
+    document.getElementById('notes').value='';
+    document.getElementById('photo-preview').innerHTML='';
+    todayPhotos = [];
+    document.getElementById('photo-input').value='';
+    toggleCustom('hide');
+    alert('DAY ADDED WITH PHOTOS!');
+  }
+
+  function render(){
+    let html = '';
+    Object.keys(week).sort().reverse().forEach(date => {
+      const e = week[date];
+      const dayName = new Date(date).toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'short'});
+      let photoHtml = '';
+      if(e.photos && e.photos.length>0){
+        photoHtml = '<div class="photo-grid">';
+        e.photos.forEach(src => photoHtml += `<img src="${src}" class="photo-thumb">`);
+        photoHtml += '</div>';
+      }
+      html += `<div class="day">
+        <b>${dayName}</b> | ${e.job}<br>
+        ${e.times}   <b>${e.paid} hrs</b><pre>${e.notes}</pre>${photoHtml}
+      </div>`;
+    });
+    document.getElementById('output').innerHTML = html || '<div style="text-align:center;padding:50px;color:#666">No days yet – start above!</div>';
+  }
+
+  function copyAll(){
+    let text = `CID TIMESHEET – Week ending ${new Date().toLocaleDateString('en-AU',{weekday:'long', day:'numeric', month:'long', year:'numeric'})}\n\n`;
+    Object.keys(week).sort().reverse().forEach(date => {
+      const e = week[date];
+      const dayName = new Date(date).toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'short'});
+      text += `${dayName} | ${e.job}\n${e.times}   ${e.paid} hrs\n${e.notes}\n`;
+      if(e.photos && e.photos.length>0) text += `(Photos attached – ${e.photos.length} images)\n`;
+      text += '\n';
+    });
+    navigator.clipboard.writeText(text);
+    alert('WEEK COPIED! Paste into email');
+  }
+
+  render();
+</script>
+</body>
+</html>
