@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CID Timesheet v9</title>
+<title>CID Timesheet v10 – FINAL</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <style>
   body{font-family:Arial;background:#0b1e3d;color:white;margin:0;padding:0}
@@ -29,7 +29,7 @@
 <body>
   <div class="logo">
     <img src="https://iili.io/3cQ9OJx.png" alt="CID Enterprises Vic">
-    <h1>CID TIMESHEET PRO v9</h1>
+    <h1>CID TIMESHEET PRO v10</h1>
   </div>
 
   <div class="today-date" id="today-date"></div>
@@ -59,9 +59,13 @@
   <div class="section">
     <h2>Today's Notes</h2>
     <textarea id="notes" placeholder="" style="height:200px"></textarea>
-    <button class="camera-btn" onclick="takePhoto()">Add Photo</button>
+    
+    <button class="camera-btn" onclick="document.getElementById('photo-input').click()">
+      Add Photo (from Camera Roll)
+    </button>
     <div id="photo-preview" class="photo-grid"></div>
-    <input type="file" id="photo-input" accept="image/*" capture="environment" style="display:none">
+    <input type="file" id="photo-input" accept="image/*" multiple style="display:none">
+    
     <button onclick="addDay()">ADD TODAY'S ENTRY</button>
   </div>
 
@@ -78,11 +82,11 @@
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
   });
 
-  let week = JSON.parse(localStorage.getItem('cid_v9')) || {};
+  let week = JSON.parse(localStorage.getItem('cid_v10')) || {};
   let customJobs = JSON.parse(localStorage.getItem('custom_jobs')) || [];
-  let todayPhotos = [];
+  let todayPhotos = [];   // stores actual File objects
 
-  function save(){localStorage.setItem('cid_v9', JSON.stringify(week))}
+  function save(){localStorage.setItem('cid_v10', JSON.stringify(week))}
   function saveJobs(){localStorage.setItem('custom_jobs', JSON.stringify(customJobs))}
 
   // Load custom jobs
@@ -97,131 +101,20 @@
     document.getElementById('custom').style.display = val==='other' ? 'block' : 'none';
   }
 
-  function takePhoto(){
-    document.getElementById('photo-input').click();
-  }
-
+  // PHOTO UPLOAD FROM CAMERA ROLL
   document.getElementById('photo-input').addEventListener('change', function(e){
-    const file = e.target.files[0];
-    if(!file) return;
-    const reader = new FileReader();
-    reader.onload = function(ev){
-      const dataURL = ev.target.result;
-      todayPhotos.push(dataURL);
-      const img = document.createElement('img');
-      img.src = dataURL;
-      img.className = 'photo-thumb';
-      document.getElementById('photo-preview').appendChild(img);
+    const files = e.target.files;
+    for(let file of files){
+      todayPhotos.push(file);
+      const reader = new FileReader();
+      reader.onload = ev => {
+        const img = document.createElement('img');
+        img.src = ev.target.result;
+        img.className = 'photo-thumb';
+        document.getElementById('photo-preview').appendChild(img);
+      }
+      reader.readAsDataURL(file);
     }
-    reader.readAsDataURL(file);
   });
 
-  function timeToMins(t){ const [h,m] = t.split(':').map(Number); return h*60 + m; }
-
-  function addDay(){
-    const date = new Date().toISOString().slice(0,10);
-    const start = document.getElementById('start-time').value || "07:00";
-    const finish = document.getElementById('finish-time').value || "15:30";
-    let job = document.getElementById('job').value;
-    if(job==='other'){
-      job = document.getElementById('custom').value.trim();
-      if(!job){alert('Type custom location');return;}
-      if(!customJobs.includes(job)){
-        customJobs.unshift(job);
-        if(customJobs.length>10) customJobs.pop();
-        saveJobs();
-        location.reload();
-      }
-    }
-    const notes = document.getElementById('notes').value.trim();
-    if(!notes && todayPhotos.length===0){alert('Add notes or photo!');return;}
-
-    const newStart = timeToMins(start);
-    const newEnd = timeToMins(finish);
-
-    // Check for time clash on same day
-    if(week[date]){
-      for(let entry of week[date]){
-        const eStart = timeToMins(entry.times.split(' – ')[0]);
-        const eEnd = timeToMins(entry.times.split(' – ')[1]);
-        if(!(newEnd <= eStart || newStart >= eEnd)){
-          alert('TIME CLASH! You already have a job from ' + entry.times);
-          return;
-        }
-      }
-    }
-
-    const [h1,m1]=start.split(':').map(Number);
-    const [h2,m2]=finish.split(':').map(Number);
-    let raw = (h2+m2/60)-(h1+m1/60);
-    const isSat = new Date().getDay()===6;
-    const paid = (isSat || raw>8) ? raw : raw-0.5;
-
-    const entry = {
-      times: start+' – '+finish,
-      paid: paid.toFixed(2),
-      notes: notes,
-      job: job,
-      photos: todayPhotos.slice()
-    };
-
-    if(!week[date]) week[date] = [];
-    week[date].push(entry);
-    save(); render();
-
-    // reset
-    document.getElementById('notes').value='';
-    document.getElementById('photo-preview').innerHTML='';
-    todayPhotos = [];
-    document.getElementById('photo-input').value='';
-    toggleCustom('hide');
-    alert('ENTRY ADDED!');
-  }
-
-  function render(){
-    let html = '';
-    Object.keys(week).sort().reverse().forEach(date => {
-      const dayName = new Date(date).toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'short'});
-      week[date].forEach(e => {
-        let photoHtml = '';
-        if(e.photos && e.photos.length>0){
-          photoHtml = '<div class="photo-grid">';
-          e.photos.forEach(src => photoHtml += `<img src="${src}" class="photo-thumb">`);
-          photoHtml += '</div>';
-        }
-        html += `<div class="day">
-          <b>${dayName}</b> | ${e.job}<br>
-          ${e.times}   <b>${e.paid} hrs</b><pre>${e.notes}</pre>${photoHtml}
-        </div>`;
-      });
-    });
-    document.getElementById('output').innerHTML = html || '<div style="text-align:center;padding:50px;color:#666">No entries yet</div>';
-  }
-
-  function copyAll(){
-    let text = `CID TIMESHEET v9 – Week ending ${new Date().toLocaleDateString('en-AU',{weekday:'long', day:'numeric', month:'long', year:'numeric'})}\n\n`;
-    Object.keys(week).sort().reverse().forEach(date => {
-      const dayName = new Date(date).toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'short'});
-      week[date].forEach(e => {
-        text += `${dayName} | ${e.job}\n${e.times}   ${e.paid} hrs\n${e.notes}\n`;
-        if(e.photos && e.photos.length>0) text += `(Photos attached – ${e.photos.length} images)\n`;
-        text += '\n';
-      });
-    });
-    navigator.clipboard.writeText(text);
-    alert('WEEK COPIED!');
-  }
-
-  function deleteAll(){
-    if(confirm('NUKE EVERYTHING? This cannot be undone.')){
-      week = {};
-      save();
-      render();
-      alert('ALL ENTRIES DELETED');
-    }
-  }
-
-  render();
-</script>
-</body>
-</html>
+  function timeToMins(t){ const [h,m] = t.split(':').map(Number); return h*60
