@@ -22,6 +22,7 @@
   pre{background:rgba(0,0,0,0.3);padding:16px;border-radius:12px;white-space:pre-wrap;font-size:17px}
   .job-item{display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,0.1);padding:14px;margin:8px 0;border-radius:12px;font-size:17px}
   .delete-x{background:#e74c3c;color:white;border:none;width:36px;height:36px;border-radius:50%;font-size:20px;font-weight:bold}
+  .ot{color:#e67e22;font-weight:bold}
 </style>
 </head>
 <body>
@@ -74,17 +75,15 @@
 </div>
 
 <script>
-  // MELBOURNE TIME + WEEK ENDING = LAST MONDAY
   const now = new Date();
   const melb = {timeZone:'Australia/Melbourne'};
   document.getElementById('today-date').innerText = now.toLocaleDateString('en-AU', {...melb, weekday:'long', day:'numeric', month:'long', year:'numeric'});
+  const today = now.toLocaleDateString('en-CA', melb);
 
-  // FIND LAST MONDAY
+  // LAST MONDAY
   const lastMonday = new Date(now);
   lastMonday.setDate(now.getDate() - ((now.getDay() + 6) % 7));
   const weekEnding = lastMonday.toLocaleDateString('en-AU', {...melb, weekday:'long', day:'numeric', month:'long', year:'numeric'});
-
-  const today = now.toLocaleDateString('en-CA', melb);
 
   let week = JSON.parse(localStorage.getItem('timelatch_week') || '{}');
   let customJobs = JSON.parse(localStorage.getItem('timelatch_jobs') || '[]');
@@ -122,21 +121,49 @@
 
     const start = document.getElementById('start-time').value || "07:00";
     const finish = document.getElementById('finish-time').value || "15:30";
-    const newStart = timeToMins(start);
-    const newEnd = timeToMins(finish);
+    const startMins = timeToMins(start);
+    const finishMins = timeToMins(finish);
 
+    // TIME CLASH CHECK
     if(week[today]){
       for(let e of week[today]){
-        if(newEnd > timeToMins(e.times.split(' – ')[0]) && newStart < timeToMins(e.times.split(' – ')[1])){
+        const eStart = timeToMins(e.times.split(' – ')[0]);
+        const eEnd = timeToMins(e.times.split(' – ')[1]);
+        if(finishMins > eStart && startMins < eEnd){
           alert('TIME CLASH! Already have ' + e.times); return;
         }
       }
     }
 
-    const raw = (timeToMins(finish) - timeToMins(start)) / 60;
-    const paid = (now.getDay()===6 || raw>8) ? raw : raw-0.5;
+    const raw = (finishMins - startMins) / 60;
+    const isSat = now.getDay() === 6;
 
-    const entry = {times: start+' – '+finish, paid: paid.toFixed(2), notes, job};
+    let normal = 0, ot = 0;
+
+    if(isSat){
+      ot = raw;
+    } else {
+      const dayStart = 7 * 60;     // 7:00am
+      const dayEnd = 15.5 * 60;   // 3:30pm
+
+      const before = Math.max(0, Math.min(finishMins, dayStart) - startMins) / 60;
+      const during = Math.max(0, Math.min(finishMins, dayEnd) - Math.max(startMins, dayStart)) / 60;
+      const after = Math.max(0, finishMins - Math.max(startMins, dayEnd)) / 60;
+
+      ot = before + after;
+      normal = during > 0 ? during - 0.5 : 0; // lunch break only if worked during day
+    }
+
+    const paid = (normal + ot).toFixed(2);
+    const otDisplay = ot > 0 ? ` <span class="ot">(OT: ${ot.toFixed(2)} hrs)</span>` : '';
+
+    const entry = {
+      times: start+' – '+finish,
+      paid: paid,
+      ot: ot.toFixed(2),
+      notes,
+      job
+    };
     if(!week[today]) week[today] = [];
     week[today].push(entry);
     save(); render();
@@ -153,7 +180,11 @@
     Object.keys(week).sort().reverse().forEach(date => {
       const dayName = new Date(date+'T12:00:00').toLocaleDateString('en-AU',{...melb,weekday:'long',day:'numeric',month:'short'});
       week[date].forEach(e => {
-        html += `<div class="day"><b>${dayName}</b> | ${e.job}<br>${e.times}   <b>${e.paid} hrs</b><pre>${e.notes}</pre></div>`;
+        const otTag = e.ot > 0 ? ` <span class="ot">(OT: ${e.ot} hrs)</span>` : '';
+        html += `<div class="day">
+          <b>${dayName}</b> | ${e.job}<br>
+          ${e.times}   <b>${e.paid} hrs</b>${otTag}<pre>${e.notes}</pre>
+        </div>`;
       });
     });
     document.getElementById('output').innerHTML = html || '<div style="text-align:center;padding:50px;color:#666">No entries yet</div>';
@@ -166,7 +197,8 @@
     Object.keys(week).sort().reverse().forEach(date => {
       const dayName = new Date(date+'T12:00:00').toLocaleDateString('en-AU',{...melb,weekday:'long',day:'numeric',month:'short'});
       week[date].forEach(e => {
-        text += `${dayName} | ${e.job}\n${e.times}   ${e.paid} hrs\n${e.notes}\n\n`;
+        const otTag = e.ot > 0 ? ` (OT: ${e.ot} hrs)` : '';
+        text += `${dayName} | ${e.job}\n${e.times}   ${e.paid} hrs${otTag}\n${e.notes}\n\n`;
       });
     });
     navigator.clipboard.writeText(text);
@@ -175,12 +207,3 @@
 
   function deleteAll(){
     if(confirm('DELETE EVERYTHING?')){
-      week = {}; save(); render(); alert('ALL GONE');
-    }
-  }
-
-  render();
-  renderJobs();
-</script>
-</body>
-</html>
