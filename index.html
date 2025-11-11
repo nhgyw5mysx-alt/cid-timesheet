@@ -36,7 +36,7 @@
       z-index: 1;
     }
 
-    /* HEADER – CLEAN & GLOWING */
+    /* HEADER – CLEAN */
     .header {
       text-align: center;
       margin-bottom: 32px;
@@ -75,60 +75,22 @@
       text-shadow: 0 0 10px rgba(0,212,255,0.4);
     }
 
-    /* NO BORDERS ON ANYTHING EXCEPT WEEK */
-    .card, .time-card, .name-card, .job-card, .saved-card, .notes-card {
-      background: rgba(20, 26, 46, 0.92);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border: none !important;
-      border-radius: 24px;
-      padding: 24px;
-      margin-bottom: 20px;
-      box-shadow: 0 10px 28px rgba(0, 212, 255, 0.15);
-      overflow: hidden;
+    /* NO DARK BOXES – ONLY MINIMAL TIME BOXES */
+    .section {
+      margin-bottom: 28px;
+      padding: 0 8px;
     }
 
-    /* TIME INPUTS – NO INNER BOXES */
-    .time-inputs {
-      display: flex;
-      gap: 16px;
-      margin: 20px 0;
-    }
-    .time-field {
-      flex: 1;
-      background: transparent;
-      border: none;
-      border-radius: 0;
-      padding: 0;
-      text-align: center;
-    }
-    .time-field > div {
-      font-size: 17px;
-      color: #00d4ff;
-      margin-bottom: 6px;
-      font-weight: 600;
-    }
-    .time-field input {
-      background: transparent;
-      border: none;
-      color: white;
-      font-size: 38px;
-      font-weight: bold;
-      text-align: center;
-      width: 100%;
-      outline: none;
-      padding: 8px 0;
-    }
-
-    /* FORM ELEMENTS – CLEAN INPUTS */
     .section-title {
       font-size: 26px;
       color: #00d4ff;
       text-align: center;
-      margin: 16px 0 14px;
+      margin: 16px 0 20px;
       font-weight: 700;
     }
-    select, input, textarea {
+
+    /* NAME INPUT – NO BOX */
+    #user-name {
       width: 100%;
       padding: 18px;
       background: rgba(255, 255, 255, 0.08);
@@ -136,7 +98,55 @@
       border-radius: 20px;
       color: white;
       font-size: 18px;
-      margin: 10px 0;
+      text-align: center;
+    }
+
+    /* TIME – SMALL BOXES AROUND TIMES ONLY */
+    .time-inputs {
+      display: flex;
+      gap: 20px;
+      margin: 20px 0;
+      justify-content: center;
+    }
+    .time-field {
+      flex: 1;
+      max-width: 140px;
+      text-align: center;
+    }
+    .time-field > div {
+      font-size: 17px;
+      color: #00d4ff;
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+    .time-box {
+      background: rgba(20, 26, 46, 0.7);
+      border: 1px solid rgba(0,212,255,0.3);
+      border-radius: 18px;
+      padding: 12px 8px;
+      backdrop-filter: blur(8px);
+    }
+    .time-box input {
+      background: transparent;
+      border: none;
+      color: white;
+      font-size: 34px;
+      font-weight: bold;
+      text-align: center;
+      width: 100%;
+      outline: none;
+    }
+
+    /* JOB & NOTES – NO DARK BOX */
+    select, textarea {
+      width: 100%;
+      padding: 18px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(0,212,255,0.25);
+      border-radius: 20px;
+      color: white;
+      font-size: 18px;
+      margin: 12px 0;
     }
     select:focus, input:focus, textarea:focus {
       border-color: #00d4ff;
@@ -170,15 +180,15 @@
     .copy { background: #00ff9d; padding: 24px; font-size: 26px; }
     .delete-all { background: #ff3b5c; color: white; padding: 24px; font-size: 26px; }
 
-    /* ONLY "Your Week So Far" HAS BORDER */
+    /* WEEK – ONLY THIS HAS FULL BORDER */
     .week-card {
       background: rgba(20, 26, 46, 0.92);
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
-      border: 1px solid rgba(0, 212, 255, 0.3) !important;
+      border: 1px solid rgba(0, 212, 255, 0.3);
       border-radius: 24px;
       padding: 24px;
-      margin-bottom: 20px;
+      margin: 28px 0;
       box-shadow: 0 10px 28px rgba(0, 212, 255, 0.15);
     }
 
@@ -241,21 +251,27 @@
     <div class="today-date" id="today-date"></div>
 
     <!-- NAME -->
-    <div class="card name-card">
+    <div class="section">
       <div class="section-title">Your Name</div>
       <input type="text" id="user-name" placeholder="e.g. Daniel">
     </div>
 
-    <!-- TIME – NO INNER BOXES -->
-    <div class="card time-card">
+    <!-- TIME – SMALL BOXES -->
+    <div class="section">
       <div class="time-inputs">
-        <div class="time-field"><div>START</div><input type="time" id="start-time" value="07:00"></div>
-        <div class="time-field"><div>FINISH</div><input type="time" id="finish-time" value="15:30"></div>
+        <div class="time-field">
+          <div>START</div>
+          <div class="time-box"><input type="time" id="start-time" value="07:00"></div>
+        </div>
+        <div class="time-field">
+          <div>FINISH</div>
+          <div class="time-box"><input type="time" id="finish-time" value="15:30"></div>
+        </div>
       </div>
     </div>
 
     <!-- JOB -->
-    <div class="card job-card">
+    <div class="section">
       <div class="section-title">Job Location</div>
       <select id="job">
         <option value="CSL Broadmeadows">CSL Broadmeadows</option>
@@ -263,23 +279,23 @@
         <option value="CSL Melbourne">CSL Melbourne</option>
         <option value="other">+ Add Custom Location</option>
       </select>
-      <input type="text" id="custom" placeholder="Type new location…" style="display:none;margin-top:10px">
+      <input type="text" id="custom" placeholder="Type new location…" style="display:none;margin-top:12px">
     </div>
 
     <!-- SAVED JOBS -->
-    <div class="card saved-card">
+    <div class="section">
       <div class="section-title">Saved Locations</div>
       <div id="saved-jobs"></div>
     </div>
 
     <!-- NOTES -->
-    <div class="card notes-card">
+    <div class="section">
       <div class="section-title">Today's Notes</div>
       <textarea id="notes" placeholder="Type everything here…"></textarea>
       <button id="add-btn">ADD TODAY'S ENTRY</button>
     </div>
 
-    <!-- WEEK – ONLY THIS HAS BORDER -->
+    <!-- WEEK – ONLY FULL BORDER -->
     <div class="week-card">
       <div class="section-title">Your Week So Far</div>
       <div id="output"></div>
