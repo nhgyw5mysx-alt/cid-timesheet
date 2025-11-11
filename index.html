@@ -6,27 +6,29 @@
 <title>TimeLatch</title>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:-apple-system,Arial,sans-serif;background:#0b1e3d;color:white;display:flex;justify-content:center;min-height:100vh;overflow-x:hidden}
+  body{font-family:-apple-system,Arial,sans-serif;background:#0a0e1a;color:white;display:flex;justify-content:center;min-height:100vh;overflow-x:hidden}
   .app{max-width:500px;width:100%;padding:16px 12px}
-  .header{text-align:center;padding:16px 0;background:#0a182e;margin-bottom:20px;border-radius:18px;overflow:hidden}
+  .header{text-align:center;padding:16px 0;background:#0f1527;margin-bottom:20px;border-radius:18px;overflow:hidden;box-shadow:0 4px 12px rgba(0,212,255,0.1)}
   h1{margin:0;font-size:28px;font-weight:bold}
-  .logo-img{width:100px;height:auto;margin:12px auto 6px;display:block;border-radius:8px}
-  .today-date{text-align:center;font-size:28px;font-weight:bold;color:#3498db;margin:15px 0}
+  .logo-img{width:100px;height:auto;margin:12px auto 6px;display:block;border-radius:12px;box-shadow:0 0 20px rgba(0,212,255,0.3)}
+  .today-date{text-align:center;font-size:28px;font-weight:bold;color:#00d4ff;margin:15px 0;text-shadow:0 0 8px rgba(0,212,255,0.4)}
   .time-inputs{display:flex;gap:10px;margin:20px 0}
-  .time-field{flex:1;background:#1e3a5f;border-radius:16px;overflow:hidden;display:flex;flex-direction:column;justify-content:center;align-items:center}
-  .time-field > div{font-size:17px;margin-bottom:4px}
+  .time-field{flex:1;background:#141a2e;border-radius:16px;overflow:hidden;display:flex;flex-direction:column;justify-content:center;align-items:center;border:1px solid rgba(0,212,255,0.2)}
+  .time-field > div{font-size:17px;margin-bottom:4px;color:#00d4ff}
   .time-field input{width:100%;background:transparent;border:none;color:white;font-size:36px;font-weight:bold;text-align:center;padding:8px 0;outline:none}
-  .section{background:rgba(255,255,255,0.1);border-radius:18px;padding:18px;margin:16px 0;overflow:hidden}
-  select,input,textarea{width:100%;padding:16px;background:rgba(255,255,255,0.2);border:none;border-radius:14px;color:white;font-size:18px;margin:8px 0}
-  button{background:#3498db;color:white;padding:18px;border:none;border-radius:14px;font-size:21px;margin:10px 0;width:100%;font-weight:bold}
-  .copy{background:#27ae60;padding:22px;font-size:24px}
-  .delete-all{background:#c0392b;padding:22px;font-size:24px}
-  .day{background:rgba(255,255,255,0.1);padding:18px;margin:12px 0;border-radius:16px;overflow:hidden}
+  .section{background:#141a2e;border-radius:18px;padding:18px;margin:16px 0;overflow:hidden;border:1px solid rgba(0,212,255,0.15)}
+  select,input,textarea{width:100%;padding:16px;background:rgba(255,255,255,0.08);border:1px solid rgba(0,212,255,0.2);border-radius:14px;color:white;font-size:18px;margin:8px 0}
+  select:focus,input:focus,textarea:focus{border-color:#00d4ff;outline:none;box-shadow:0 0 8px rgba(0,212,255,0.3)}
+  button{background:#00d4ff;color:#0a0e1a;padding:18px;border:none;border-radius:14px;font-size:21px;margin:10px 0;width:100%;font-weight:bold;transition:0.3s;box-shadow:0 4px 12px rgba(0,212,255,0.3)}
+  button:hover{transform:translateY(-2px);box-shadow:0 6px 16px rgba(0,212,255,0.4)}
+  .copy{background:#00ff9d;color:#0a0e1a;padding:22px;font-size:24px}
+  .delete-all{background:#ff3b5c;color:white;padding:22px;font-size:24px}
+  .day{background:#141a2e;padding:18px;margin:12px 0;border-radius:16px;overflow:hidden;border:1px solid rgba(0,212,255,0.1)}
   pre{background:rgba(0,0,0,0.3);padding:14px;border-radius:12px;white-space:pre-wrap;font-size:17px;margin:8px 0}
-  .job-item{display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,0.1);padding:12px;margin:6px 0;border-radius:12px;font-size:17px;overflow:hidden}
-  .delete-x{background:#e74c3c;color:white;border:none;width:34px;height:34px;border-radius:50%;font-size:18px;font-weight:bold}
-  .ot{color:#e67e22;font-weight:bold}
-  h2{text-align:center;margin:0 0 12px 0;font-size:20px}
+  .job-item{display:flex;justify-content:space-between;align-items:center;background:rgba(0,212,255,0.1);padding:12px;margin:6px 0;border-radius:12px;font-size:17px;overflow:hidden;border:1px solid rgba(0,212,255,0.2)}
+  .delete-x{background:#ff3b5c;color:white;border:none;width:34px;height:34px;border-radius:50%;font-size:18px;font-weight:bold}
+  .ot{color:#00ff9d;font-weight:bold;text-shadow:0 0 6px rgba(0,255,157,0.5)}
+  h2{text-align:center;margin:0 0 12px 0;font-size:20px;color:#00d4ff}
 </style>
 </head>
 <body>
@@ -145,4 +147,10 @@
       }
     }
 
-    const raw = (finishMins - startMins)
+    const raw = (finishMins - startMins) / 60;
+    const isSat = now.getDay() === 6;
+
+    let normal = 0, ot = 0;
+    if(isSat){
+      ot = raw;
+    }
