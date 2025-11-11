@@ -10,16 +10,15 @@
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     
-    /* FLOATING CYAN PARTICLES BACKGROUND */
+    /* FLOATING PARTICLES BACKGROUND */
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
       background: #0a0e1a;
       color: white;
-      display: flex;
-      justify-content: center;
       min-height: 100vh;
-      overflow: hidden;
+      overflow-x: hidden;
       position: relative;
+      padding: 20px 16px;
     }
 
     canvas {
@@ -32,141 +31,210 @@
 
     .app {
       max-width: 500px;
-      width: 100%;
-      padding: 16px 12px;
+      margin: 0 auto;
       position: relative;
       z-index: 1;
     }
 
-    .header, .section, .day {
-      background: rgba(20, 26, 46, 0.88);
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
-      border: 1px solid rgba(0, 212, 255, 0.35);
-      box-shadow: 0 6px 20px rgba(0, 212, 255, 0.18);
-      border-radius: 16px;
+    /* FULL-SCREEN OVERLAPPING CARDS */
+    .card {
+      background: rgba(20, 26, 46, 0.92);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(0, 212, 255, 0.3);
+      border-radius: 28px;
+      padding: 24px;
+      margin-bottom: -60px;
+      position: relative;
+      box-shadow: 0 12px 32px rgba(0, 212, 255, 0.15);
       overflow: hidden;
-      margin-bottom: 16px;
-    }
-    .header {
-      text-align: center;
-      padding: 18px 0;
-      margin-bottom: 20px;
     }
 
-    @keyframes pulse {
-      0%, 100% { box-shadow: 0 0 18px rgba(0, 212, 255, 0.25); }
-      50% { box-shadow: 0 0 28px rgba(0, 212, 255, 0.45); }
+    .card:first-child { margin-top: 20px; }
+    .card:last-child { margin-bottom: 40px; }
+
+    /* HEADER CARD */
+    .header-card {
+      text-align: center;
+      padding-bottom: 40px;
     }
     .logo-img {
-      width: 100px; height: auto; margin: 12px auto 6px; display: block;
-      border-radius: 12px; animation: pulse 3s infinite ease-in-out;
+      width: 90px;
+      height: auto;
+      border-radius: 16px;
+      margin: 8px auto 12px;
+      box-shadow: 0 0 20px rgba(0,212,255,0.4);
+    }
+    h1 {
+      font-family: 'Exo 2', sans-serif;
+      font-size: 36px;
+      font-weight: 700;
+      color: #00d4ff;
+      text-shadow: 0 0 10px rgba(0,212,255,0.4);
     }
 
-    h1, h2, .today-date {
-      font-family: 'Exo 2', sans-serif !important;
-      letter-spacing: 0.5px; position: relative; display: inline-block;
+    /* INPUT CARD */
+    .input-card {
+      padding-top: 50px;
     }
-    h1 { margin: 0; font-size: 32px; font-weight: 700; }
-    h2 { text-align: center; margin: 0 0 12px 0; font-size: 22px; color: #00d4ff; padding-bottom: 8px; }
-    h2::after, .today-date::after {
-      content: ''; position: absolute; width: 0; height: 3px; bottom: 0; left: 50%;
-      background: linear-gradient(90deg, transparent, #00d4ff, transparent);
-      transition: width 0.5s ease, left 0.5s ease; transform: translateX(-50%);
-      border-radius: 2px; box-shadow: 0 0 8px rgba(0, 212, 255, 0.6);
-    }
-    h2:hover::after, .today-date:hover::after { width: 80%; }
-
     .today-date {
-      text-align: center; font-size: 28px; font-weight: 700; color: #00d4ff;
-      margin: 15px 0; text-shadow: 0 0 8px rgba(0, 212, 255, 0.4);
+      font-family: 'Exo 2', sans-serif;
+      font-size: 28px;
+      font-weight: 700;
+      color: #00d4ff;
+      text-align: center;
+      margin: 20px 0 30px;
+      text-shadow: 0 0 8px rgba(0,212,255,0.4);
     }
 
-    .time-inputs { display: flex; gap: 10px; margin: 20px 0; }
+    .time-inputs {
+      display: flex;
+      gap: 12px;
+      margin: 25px 0;
+    }
     .time-field {
-      flex: 1; background: #141a2e; border-radius: 16px; overflow: hidden;
-      display: flex; flex-direction: column; justify-content: center; align-items: center;
-      border: 1px solid rgba(0, 212, 255, 0.25); padding: 12px 0;
+      flex: 1;
+      background: rgba(20, 26, 46, 0.7);
+      border-radius: 20px;
+      padding: 16px 0;
+      text-align: center;
+      border: 1px solid rgba(0,212,255,0.25);
     }
-    .time-field > div { font-size: 17px; margin-bottom: 4px; color: #00d4ff; }
+    .time-field > div {
+      font-size: 16px;
+      color: #00d4ff;
+      margin-bottom: 6px;
+    }
     .time-field input {
-      width: 100%; background: transparent; border: none; color: white;
-      font-size: 36px; font-weight: bold; text-align: center; padding: 8px 0; outline: none;
+      background: transparent;
+      border: none;
+      color: white;
+      font-size: 32px;
+      font-weight: bold;
+      text-align: center;
+      width: 100%;
+      outline: none;
     }
 
-    .section { padding: 18px; margin: 16px 0; }
+    /* FORM ELEMENTS */
     select, input, textarea {
-      width: 100%; padding: 16px; background: rgba(255, 255, 255, 0.08);
-      border: 1px solid rgba(0, 212, 255, 0.25); border-radius: 14px; color: white;
-      font-size: 18px; margin: 8px 0;
+      width: 100%;
+      padding: 18px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(0,212,255,0.25);
+      border-radius: 18px;
+      color: white;
+      font-size: 18px;
+      margin: 12px 0;
     }
     select:focus, input:focus, textarea:focus {
-      border-color: #00d4ff; outline: none; box-shadow: 0 0 8px rgba(0, 212, 255, 0.3);
+      border-color: #00d4ff;
+      outline: none;
+      box-shadow: 0 0 12px rgba(0,212,255,0.3);
     }
 
+    /* BUTTONS */
     button {
-      position: relative; overflow: hidden; background: #00d4ff; color: #0a0e1a;
-      padding: 18px; border: none; border-radius: 14px; font-size: 21px;
-      margin: 10px 0; width: 100%; font-weight: bold; transition: 0.3s;
-      box-shadow: 0 4px 12px rgba(0, 212, 255, 0.3); cursor: pointer;
+      width: 100%;
+      padding: 20px;
+      background: #00d4ff;
+      color: #0a0e1a;
+      border: none;
+      border-radius: 20px;
+      font-size: 22px;
+      font-weight: bold;
+      margin: 16px 0;
+      cursor: pointer;
+      box-shadow: 0 6px 16px rgba(0,212,255,0.3);
+      transition: 0.3s;
     }
-    button::after {
-      content: ''; position: absolute; top: 50%; left: 50%; width: 5px; height: 5px;
-      background: rgba(255, 255, 255, 0.5); opacity: 0; border-radius: 100%;
-      transform: scale(1) translate(-50%, -50%); transition: opacity 1s, transform 0.5s;
+    button:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 10px 24px rgba(0,212,255,0.4);
     }
-    button:active::after { opacity: 1; transform: scale(100) translate(-50%, -50%); transition: 0s; }
-    button:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0, 212, 255, 0.4); }
-    .copy { background: #00ff9d; color: #0a0e1a; padding: 22px; font-size: 24px; }
-    .delete-all { background: #ff3b5c; color: white; padding: 22px; font-size: 24px; }
+    .copy { background: #00ff9d; padding: 24px; font-size: 26px; }
+    .delete-all { background: #ff3b5c; color: white; padding: 24px; font-size: 26px; }
 
+    /* OUTPUT CARD */
+    .output-card {
+      padding-top: 50px;
+    }
     .day {
-      margin: 12px 0; padding: 16px; border-radius: 14px;
-      background: rgba(20, 26, 46, 0.85); border: 1px solid rgba(0, 212, 255, 0.2);
-      word-wrap: break-word; overflow-wrap: break-word;
+      background: rgba(20, 26, 46, 0.85);
+      border-radius: 18px;
+      padding: 18px;
+      margin: 16px 0;
+      border: 1px solid rgba(0,212,255,0.2);
     }
     pre {
-      background: rgba(0, 0, 0, 0.3); padding: 14px; border-radius: 12px;
-      white-space: pre-wrap; font-size: 17px; margin: 8px 0; line-height: 1.5;
-      max-height: 200px; overflow-y: auto;
+      background: rgba(0,0,0,0.3);
+      padding: 14px;
+      border-radius: 14px;
+      white-space: pre-wrap;
+      font-size: 16px;
+      margin: 10px 0;
+      line-height: 1.5;
+      max-height: 180px;
+      overflow-y: auto;
     }
+    .ot { color: #00ff9d; font-weight: bold; }
 
+    /* JOB LIST */
     .job-item {
-      display: flex; justify-content: space-between; align-items: center;
-      background: rgba(0, 212, 255, 0.1); padding: 12px; margin: 6px 0;
-      border-radius: 12px; font-size: 17px; border: 1px solid rgba(0, 212, 255, 0.2);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(0,212,255,0.1);
+      padding: 14px;
+      margin: 8px 0;
+      border-radius: 16px;
+      font-size: 17px;
+      border: 1px solid rgba(0,212,255,0.2);
     }
     .delete-x {
-      background: #ff3b5c; color: white; border: none; width: 34px; height: 34px;
-      border-radius: 50%; font-size: 18px; font-weight: bold; cursor: pointer;
+      background: #ff3b5c;
+      color: white;
+      border: none;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      font-size: 18px;
+      font-weight: bold;
     }
-    .ot { color: #00ff9d; font-weight: bold; text-shadow: 0 0 6px rgba(0, 255, 157, 0.5); }
   </style>
 </head>
 <body>
-  <!-- PARTICLE CANVAS -->
+  <!-- PARTICLES -->
   <canvas id="particles"></canvas>
 
   <div class="app">
-    <div class="header">
+
+    <!-- HEADER CARD -->
+    <div class="card header-card">
       <img src="IMG_2776.jpeg" alt="TimeLatch Logo" class="logo-img">
       <h1>TimeLatch</h1>
     </div>
 
-    <div class="section">
-      <h2>Your Name</h2>
+    <!-- NAME CARD -->
+    <div class="card">
+      <h2 style="font-size:24px;color:#00d4ff;margin-bottom:16px;text-align:center">Your Name</h2>
       <input type="text" id="user-name" placeholder="e.g. Daniel">
     </div>
 
+    <!-- DATE -->
     <div class="today-date" id="today-date"></div>
 
-    <div class="time-inputs">
-      <div class="time-field"><div>START</div><input type="time" id="start-time" value="07:00"></div>
-      <div class="time-field"><div>FINISH</div><input type="time" id="finish-time" value="15:30"></div>
+    <!-- TIME CARD -->
+    <div class="card input-card">
+      <div class="time-inputs">
+        <div class="time-field"><div>START</div><input type="time" id="start-time" value="07:00"></div>
+        <div class="time-field"><div>FINISH</div><input type="time" id="finish-time" value="15:30"></div>
+      </div>
     </div>
 
-    <div class="section">
-      <h2>Job Location</h2>
+    <!-- JOB CARD -->
+    <div class="card">
+      <h2 style="font-size:24px;color:#00d4ff;margin-bottom:16px;text-align:center">Job Location</h2>
       <select id="job">
         <option value="CSL Broadmeadows">CSL Broadmeadows</option>
         <option value="CSL Tullamarine">CSL Tullamarine</option>
@@ -176,38 +244,47 @@
       <input type="text" id="custom" placeholder="Type new location…" style="display:none;margin-top:8px">
     </div>
 
-    <div class="section">
-      <h2>Saved Locations</h2>
+    <!-- SAVED JOBS -->
+    <div class="card">
+      <h2 style="font-size:24px;color:#00d4ff;margin-bottom:16px;text-align:center">Saved Locations</h2>
       <div id="saved-jobs"></div>
     </div>
 
-    <div class="section">
-      <h2>Today's Notes</h2>
-      <textarea id="notes" placeholder="Type everything here…" style="height:200px"></textarea>
+    <!-- NOTES CARD -->
+    <div class="card">
+      <h2 style="font-size:24px;color:#00d4ff;margin-bottom:16px;text-align:center">Today's Notes</h2>
+      <textarea id="notes" placeholder="Type everything here…" style="height:180px"></textarea>
       <button id="add-btn">ADD TODAY'S ENTRY</button>
     </div>
 
-    <div style="text-align:center;margin:28px 0"><h2>Your Week So Far</h2></div>
-    <div id="output"></div>
+    <!-- WEEK CARD -->
+    <div class="card output-card">
+      <h2 style="font-size:26px;color:#00d4ff;margin-bottom:20px;text-align:center">Your Week So Far</h2>
+      <div id="output"></div>
+    </div>
 
-    <button class="copy" onclick="copyAll()">Copy Timesheet</button>
-    <button class="delete-all" onclick="deleteAll()">DELETE ALL ENTRIES</button>
+    <!-- ACTION BUTTONS -->
+    <div style="margin-top: -40px; padding: 0 20px;">
+      <button class="copy" onclick="copyAll()">Copy Timesheet</button>
+      <button class="delete-all" onclick="deleteAll()">DELETE ALL ENTRIES</button>
+    </div>
+
   </div>
 
   <script>
-    // PARTICLE BACKGROUND
+    // PARTICLES
     const canvas = document.getElementById('particles');
     const ctx = canvas.getContext('2d');
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
     const particles = [];
-    for (let i = 0; i < 60; i++) {
+    for (let i = 0; i < 50; i++) {
       particles.push({
         x: Math.random() * canvas.width,
         y: Math.random() * canvas.height,
-        radius: Math.random() * 2 + 1,
-        speed: Math.random() * 0.5 + 0.2,
+        radius: Math.random() * 1.8 + 1,
+        speed: Math.random() * 0.4 + 0.2,
         angle: Math.random() * Math.PI * 2
       });
     }
@@ -222,7 +299,7 @@
 
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(0, 212, 255, 0.6)';
+        ctx.fillStyle = 'rgba(0, 212, 255, 0.5)';
         ctx.fill();
       });
       requestAnimationFrame(animate);
@@ -233,7 +310,7 @@
       canvas.height = window.innerHeight;
     });
 
-    // MAIN APP LOGIC
+    // APP LOGIC
     const now = new Date();
     const melb = { timeZone: 'Australia/Melbourne' };
     document.getElementById('today-date').innerText = now.toLocaleDateString('en-AU', {
@@ -266,7 +343,7 @@
       let html = customJobs.map((j, i) =>
         `<div class="job-item"><span>${j}</span><button class="delete-x" onclick="customJobs.splice(${i},1);saveJobs()">X</button></div>`
       ).join('');
-      document.getElementById('saved-jobs').innerHTML = html || '<div style="color:#666;padding:16px;text-align:center">No custom locations yet</div>';
+      document.getElementById('saved-jobs').innerHTML = html || '<div style="color:#666;padding:20px;text-align:center;font-size:16px">No custom locations yet</div>';
       while (jobSelect.options.length > 4) jobSelect.remove(4);
       customJobs.forEach(j => jobSelect.add(new Option(j, j), jobSelect.options[jobSelect.options.length - 1]));
     }
@@ -341,7 +418,7 @@
           </div>`;
         });
       });
-      document.getElementById('output').innerHTML = html || '<div style="text-align:center;padding:50px;color:#666">No entries yet</div>';
+      document.getElementById('output').innerHTML = html || '<div style="text-align:center;padding:50px;color:#666;font-size:16px">No entries yet</div>';
     }
 
     function copyAll() {
