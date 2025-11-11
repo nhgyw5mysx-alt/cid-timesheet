@@ -7,10 +7,13 @@
 
   <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@600;700&display=swap" rel="stylesheet">
 
+  <!-- jsPDF + html2canvas -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     
-    /* BACKGROUND + PARTICLES */
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
       background: #0a0e1a;
@@ -36,7 +39,6 @@
       z-index: 1;
     }
 
-    /* HEADER */
     .header {
       text-align: center;
       margin-bottom: 32px;
@@ -64,7 +66,6 @@
       text-shadow: 0 0 12px rgba(0,212,255,0.3);
     }
 
-    /* TODAY DATE */
     .today-date {
       font-family: 'Exo 2', sans-serif;
       font-size: 28px;
@@ -75,7 +76,6 @@
       text-shadow: 0 0 10px rgba(0,212,255,0.4);
     }
 
-    /* UNIFORM SECTIONS – NO DARK BOXES */
     .section {
       margin-bottom: 28px;
       padding: 0 8px;
@@ -89,7 +89,6 @@
       font-weight: 700;
     }
 
-    /* NAME INPUT */
     #user-name {
       width: 100%;
       padding: 18px;
@@ -101,7 +100,6 @@
       text-align: center;
     }
 
-    /* TIME – SMALL BOXES, TEXT FITS 100% */
     .time-inputs {
       display: flex;
       gap: 18px;
@@ -142,7 +140,6 @@
       letter-spacing: -0.5px;
     }
 
-    /* JOB, NOTES, WEEK – SAME STYLE */
     select, textarea, #output {
       width: 100%;
       padding: 18px;
@@ -163,7 +160,6 @@
       resize: none;
     }
 
-    /* WEEK ENTRIES */
     .day {
       background: rgba(20, 26, 46, 0.85);
       border-radius: 18px;
@@ -184,7 +180,6 @@
     }
     .ot { color: #00ff9d; font-weight: bold; text-shadow: 0 0 6px rgba(0,255,157,0.5); }
 
-    /* BUTTONS */
     button {
       width: 100%;
       padding: 20px;
@@ -203,7 +198,7 @@
       transform: translateY(-2px);
       box-shadow: 0 10px 24px rgba(0,212,255,0.4);
     }
-    .copy { background: #00ff9d; padding: 24px; font-size: 26px; }
+    .export-pdf { background: linear-gradient(135deg, #00ff9d, #00d4ff); padding: 24px; font-size: 26px; }
     .delete-all { background: #ff3b5c; color: white; padding: 24px; font-size: 26px; }
 
     .job-item {
@@ -227,6 +222,63 @@
       font-size: 18px;
       font-weight: bold;
     }
+
+    /* PDF TEMPLATE – HIDDEN UNTIL EXPORT */
+    #pdf-template {
+      position: absolute;
+      left: -9999px;
+      top: 0;
+      width: 800px;
+      padding: 60px;
+      background: white;
+      color: #000;
+      font-family: 'Helvetica', sans-serif;
+    }
+    #pdf-template .header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+    #pdf-template .logo {
+      width: 80px;
+      border-radius: 16px;
+      margin-bottom: 16px;
+    }
+    #pdf-template h1 {
+      font-size: 36px;
+      background: linear-gradient(90deg, #00d4ff, #00aaff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin: 0;
+    }
+    #pdf-template .subtitle {
+      font-size: 20px;
+      color: #555;
+      margin-top: 8px;
+    }
+    #pdf-template table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 30px;
+      font-size: 16px;
+    }
+    #pdf-template th, #pdf-template td {
+      border: 1px solid #ddd;
+      padding: 14px;
+      text-align: left;
+    }
+    #pdf-template th {
+      background: linear-gradient(135deg, #00d4ff, #00aaff);
+      color: white;
+      font-weight: bold;
+    }
+    #pdf-template .ot {
+      color: #00aa00;
+      font-weight: bold;
+    }
+    #pdf-template .notes {
+      font-style: italic;
+      color: #444;
+    }
   </style>
 </head>
 <body>
@@ -234,22 +286,18 @@
 
   <div class="app">
 
-    <!-- HEADER -->
     <div class="header">
       <img src="IMG_2776.jpeg" alt="TimeLatch Logo" class="logo-img">
       <h1>TimeLatch</h1>
     </div>
 
-    <!-- DATE -->
     <div class="today-date" id="today-date"></div>
 
-    <!-- NAME -->
     <div class="section">
       <div class="section-title">Your Name</div>
       <input type="text" id="user-name" placeholder="e.g. Daniel">
     </div>
 
-    <!-- TIME – FITS PERFECTLY -->
     <div class="section">
       <div class="time-inputs">
         <div class="time-field">
@@ -263,7 +311,6 @@
       </div>
     </div>
 
-    <!-- JOB -->
     <div class="section">
       <div class="section-title">Job Location</div>
       <select id="job">
@@ -275,38 +322,56 @@
       <input type="text" id="custom" placeholder="Type new location…" style="display:none;margin-top:12px">
     </div>
 
-    <!-- SAVED JOBS -->
     <div class="section">
       <div class="section-title">Saved Locations</div>
       <div id="saved-jobs"></div>
     </div>
 
-    <!-- NOTES -->
     <div class="section">
       <div class="section-title">Today's Notes</div>
       <textarea id="notes" placeholder="Type everything here…"></textarea>
       <button id="add-btn">ADD TODAY'S ENTRY</button>
     </div>
 
-    <!-- WEEK – SAME STYLE AS OTHERS -->
     <div class="section">
       <div class="section-title">Your Week So Far</div>
       <div id="output"></div>
     </div>
 
-    <!-- ACTIONS -->
-    <button class="copy" onclick="copyAll()">Copy Timesheet</button>
+    <!-- EXPORT PDF BUTTON -->
+    <button class="export-pdf" onclick="exportPDF()">Export PDF Timesheet</button>
     <button class="delete-all" onclick="deleteAll()">DELETE ALL ENTRIES</button>
 
   </div>
 
+  <!-- HIDDEN PDF TEMPLATE -->
+  <div id="pdf-template">
+    <div class="header">
+      <img src="IMG_2776.jpeg" alt="Logo" class="logo">
+      <h1>TimeLatch</h1>
+      <div class="subtitle" id="pdf-name">Daniel's Timesheet</div>
+      <div class="subtitle" id="pdf-week">Week ending Monday 10 November 2025</div>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Location</th>
+          <th>Time</th>
+          <th>Hours</th>
+          <th>Notes</th>
+        </tr>
+      </thead>
+      <tbody id="pdf-body"></tbody>
+    </table>
+  </div>
+
   <script>
-    // PARTICLES
+    // PARTICLES (unchanged)
     const canvas = document.getElementById('particles');
     const ctx = canvas.getContext('2d');
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
-
     const particles = [];
     for (let i = 0; i < 50; i++) {
       particles.push({
@@ -317,7 +382,6 @@
         angle: Math.random() * Math.PI * 2
       });
     }
-
     function animate() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       particles.forEach(p => {
@@ -325,7 +389,6 @@
         p.y += Math.sin(p.angle) * p.speed;
         if (p.x < 0 || p.x > canvas.width) p.angle = Math.PI - p.angle;
         if (p.y < 0 || p.y > canvas.height) p.angle = -p.angle;
-
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
         ctx.fillStyle = 'rgba(0, 212, 255, 0.5)';
@@ -450,19 +513,38 @@
       document.getElementById('output').innerHTML = html || '<div style="text-align:center;padding:60px;color:#666;font-size:17px">No entries yet</div>';
     }
 
-    function copyAll() {
+    // EXPORT TO PDF
+    async function exportPDF() {
       saveName();
-      const name = document.getElementById('user-name').value.trim() || 'Your';
-      let text = `${name}’s Timesheet – Week ending ${weekEnding}\n\n`;
+      const name = document.getElementById('user-name').value.trim() || 'Employee';
+      document.getElementById('pdf-name').innerText = `${name}'s Timesheet`;
+      document.getElementById('pdf-week').innerText = `Week ending ${weekEnding}`;
+
+      let rows = '';
       Object.keys(week).sort().reverse().forEach(date => {
         const dayName = new Date(date + 'T12:00:00').toLocaleDateString('en-AU', { ...melb, weekday: 'long', day: 'numeric', month: 'short' });
         week[date].forEach(e => {
-          const otTag = e.ot > 0 ? ` (OT: ${e.ot} hrs)` : '';
-          text += `${dayName} | ${e.job}\n${e.times}   ${e.paid} hrs${otTag}\n${e.notes}\n\n`;
+          const ot = e.ot > 0 ? `<span class="ot">OT: ${e.ot} hrs</span>` : '';
+          rows += `<tr>
+            <td>${dayName}</td>
+            <td>${e.job}</td>
+            <td>${e.times}</td>
+            <td>${e.paid} hrs ${ot}</td>
+            <td class="notes">${e.notes.replace(/\n/g, '<br>')}</td>
+          </tr>`;
         });
       });
-      navigator.clipboard.writeText(text);
-      alert('COPIED! Paste into email');
+      document.getElementById('pdf-body').innerHTML = rows || '<tr><td colspan="5" style="text-align:center;color:#999;">No entries</td></tr>';
+
+      const element = document.getElementById('pdf-template');
+      const canvas = await html2canvas(element, { scale: 2 });
+      const imgData = canvas.toDataURL('image/png');
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const width = pdf.internal.pageSize.getWidth();
+      const height = (canvas.height * width) / canvas.width;
+      pdf.addImage(imgData, 'PNG', 0, 0, width, height);
+      pdf.save(`Timesheet_${name.replace(' ', '_')}_${weekEnding.replace(/ /g, '_')}.pdf`);
     }
 
     function deleteAll() {
