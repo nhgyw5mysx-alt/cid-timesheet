@@ -10,7 +10,7 @@
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     
-    /* FLOATING PARTICLES BACKGROUND */
+    /* BACKGROUND + PARTICLES */
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
       background: #0a0e1a;
@@ -18,7 +18,7 @@
       min-height: 100vh;
       overflow-x: hidden;
       position: relative;
-      padding: 20px 16px;
+      padding: 24px 16px;
     }
 
     canvas {
@@ -36,235 +36,260 @@
       z-index: 1;
     }
 
-    /* FULL-SCREEN OVERLAPPING CARDS */
+    /* CARD BASE – SUBTLE OVERLAP */
     .card {
-      background: rgba(20, 26, 46, 0.92);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
+      background: rgba(20, 26, 46, 0.94);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
       border: 1px solid rgba(0, 212, 255, 0.3);
-      border-radius: 28px;
-      padding: 24px;
-      margin-bottom: -60px;
+      border-radius: 32px;
+      padding: 28px;
+      margin-bottom: -28px; /* SUBTLE OVERLAP */
       position: relative;
-      box-shadow: 0 12px 32px rgba(0, 212, 255, 0.15);
+      box-shadow: 0 14px 36px rgba(0, 212, 255, 0.18);
       overflow: hidden;
     }
 
-    .card:first-child { margin-top: 20px; }
-    .card:last-child { margin-bottom: 40px; }
+    .card:first-child { margin-top: 0; }
+    .card:last-child { margin-bottom: 50px; }
 
-    /* HEADER CARD */
+    /* HEADER – GLOWING TITLE */
     .header-card {
       text-align: center;
-      padding-bottom: 40px;
+      padding: 32px 28px 48px;
+      margin-bottom: -20px;
     }
     .logo-img {
-      width: 90px;
+      width: 100px;
       height: auto;
-      border-radius: 16px;
-      margin: 8px auto 12px;
-      box-shadow: 0 0 20px rgba(0,212,255,0.4);
+      border-radius: 20px;
+      margin: 12px auto;
+      box-shadow: 0 0 30px rgba(0,212,255,0.5);
+      animation: pulse 3s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 25px rgba(0,212,255,0.4); }
+      50% { box-shadow: 0 0 40px rgba(0,212,255,0.7); }
     }
     h1 {
       font-family: 'Exo 2', sans-serif;
-      font-size: 36px;
+      font-size: 42px;
       font-weight: 700;
-      color: #00d4ff;
-      text-shadow: 0 0 10px rgba(0,212,255,0.4);
+      background: linear-gradient(90deg, #00d4ff, #00aaff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 0 15px rgba(0,212,255,0.4);
+      margin-top: 16px;
     }
 
-    /* INPUT CARD */
-    .input-card {
-      padding-top: 50px;
+    /* NAME CARD */
+    .name-card h2 {
+      font-size: 28px;
+      color: #00d4ff;
+      text-align: center;
+      margin-bottom: 20px;
+      font-weight: 700;
     }
+    .name-card input {
+      width: 100%;
+      padding: 20px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(0,212,255,0.25);
+      border-radius: 22px;
+      color: white;
+      font-size: 20px;
+      text-align: center;
+    }
+
+    /* DATE */
     .today-date {
       font-family: 'Exo 2', sans-serif;
-      font-size: 28px;
+      font-size: 30px;
       font-weight: 700;
       color: #00d4ff;
       text-align: center;
-      margin: 20px 0 30px;
-      text-shadow: 0 0 8px rgba(0,212,255,0.4);
+      margin: 32px 0 20px;
+      text-shadow: 0 0 10px rgba(0,212,255,0.4);
     }
 
-    .time-inputs {
+    /* TIME CARD */
+    .time-card .time-inputs {
       display: flex;
-      gap: 12px;
-      margin: 25px 0;
+      gap: to: 16px;
+      margin: 20px 0;
     }
     .time-field {
       flex: 1;
-      background: rgba(20, 26, 46, 0.7);
-      border-radius: 20px;
-      padding: 16px 0;
+      background: rgba(20, 26, 46, 0.8);
+      border-radius: 24px;
+      padding: 20px 0;
       text-align: center;
       border: 1px solid rgba(0,212,255,0.25);
     }
     .time-field > div {
-      font-size: 16px;
+      font-size: 18px;
       color: #00d4ff;
-      margin-bottom: 6px;
+      margin-bottom: 8px;
+      font-weight: 600;
     }
     .time-field input {
       background: transparent;
       border: none;
       color: white;
-      font-size: 32px;
+      font-size: 38px;
       font-weight: bold;
       text-align: center;
       width: 100%;
       outline: none;
     }
 
-    /* FORM ELEMENTS */
-    select, input, textarea {
-      width: 100%;
-      padding: 18px;
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid rgba(0,212,255,0.25);
-      border-radius: 18px;
-      color: white;
-      font-size: 18px;
-      margin: 12px 0;
+    /* JOB & NOTES */
+    .section-title {
+      font-size: 28px;
+      color: #00d4ff;
+      text-align: center;
+      margin: 20px 0 16px;
+      font-weight: 700;
     }
-    select:focus, input:focus, textarea:focus {
-      border-color: #00d4ff;
-      outline: none;
-      box-shadow: 0 0 12px rgba(0,212,255,0.3);
-    }
-
-    /* BUTTONS */
-    button {
+    select, textarea {
       width: 100%;
       padding: 20px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(0,212,255,0.25);
+      border-radius: 22px;
+      color: white;
+      font-size: 19px;
+      margin: 12px 0;
+    }
+    textarea { height: 160px; resize: none; }
+
+    /* BUTTON */
+    button {
+      width: 100%;
+      padding: 22px;
       background: #00d4ff;
       color: #0a0e1a;
       border: none;
-      border-radius: 20px;
-      font-size: 22px;
+      border-radius: 24px;
+      font-size: 24px;
       font-weight: bold;
-      margin: 16px 0;
+      margin: 20px 0;
       cursor: pointer;
-      box-shadow: 0 6px 16px rgba(0,212,255,0.3);
+      box-shadow: 0 8px 20px rgba(0,212,255,0.35);
       transition: 0.3s;
     }
     button:hover {
       transform: translateY(-3px);
-      box-shadow: 0 10px 24px rgba(0,212,255,0.4);
+      box-shadow: 0 12px 28px rgba(0,212,255,0.45);
     }
-    .copy { background: #00ff9d; padding: 24px; font-size: 26px; }
-    .delete-all { background: #ff3b5c; color: white; padding: 24px; font-size: 26px; }
+    .copy { background: #00ff9d; padding: 26px; font-size: 28px; }
+    .delete-all { background: #ff3b5c; color: white; padding: 26px; font-size: 28px; }
 
-    /* OUTPUT CARD */
-    .output-card {
-      padding-top: 50px;
-    }
+    /* OUTPUT */
     .day {
       background: rgba(20, 26, 46, 0.85);
-      border-radius: 18px;
-      padding: 18px;
+      border-radius: 20px;
+      padding: 20px;
       margin: 16px 0;
       border: 1px solid rgba(0,212,255,0.2);
     }
     pre {
       background: rgba(0,0,0,0.3);
-      padding: 14px;
-      border-radius: 14px;
+      padding: 16px;
+      border-radius: 16px;
       white-space: pre-wrap;
-      font-size: 16px;
-      margin: 10px 0;
-      line-height: 1.5;
-      max-height: 180px;
+      font-size: 17px;
+      margin: 12px 0;
+      line-height: 1.6;
+      max-height: 160px;
       overflow-y: auto;
     }
     .ot { color: #00ff9d; font-weight: bold; }
 
-    /* JOB LIST */
     .job-item {
       display: flex;
       justify-content: space-between;
       align-items: center;
       background: rgba(0,212,255,0.1);
-      padding: 14px;
-      margin: 8px 0;
-      border-radius: 16px;
-      font-size: 17px;
+      padding: 16px;
+      margin: 10px 0;
+      border-radius: 18px;
+      font-size: 18px;
       border: 1px solid rgba(0,212,255,0.2);
     }
     .delete-x {
       background: #ff3b5c;
       color: white;
       border: none;
-      width: 36px;
-      height: 36px;
+      width: 38px;
+      height: 38px;
       border-radius: 50%;
-      font-size: 18px;
+      font-size: 20px;
       font-weight: bold;
     }
   </style>
 </head>
 <body>
-  <!-- PARTICLES -->
   <canvas id="particles"></canvas>
 
   <div class="app">
 
-    <!-- HEADER CARD -->
+    <!-- HEADER -->
     <div class="card header-card">
       <img src="IMG_2776.jpeg" alt="TimeLatch Logo" class="logo-img">
       <h1>TimeLatch</h1>
     </div>
 
-    <!-- NAME CARD -->
-    <div class="card">
-      <h2 style="font-size:24px;color:#00d4ff;margin-bottom:16px;text-align:center">Your Name</h2>
+    <!-- NAME -->
+    <div class="card name-card">
+      <h2>Your Name</h2>
       <input type="text" id="user-name" placeholder="e.g. Daniel">
     </div>
 
     <!-- DATE -->
     <div class="today-date" id="today-date"></div>
 
-    <!-- TIME CARD -->
-    <div class="card input-card">
+    <!-- TIME -->
+    <div class="card time-card">
       <div class="time-inputs">
         <div class="time-field"><div>START</div><input type="time" id="start-time" value="07:00"></div>
         <div class="time-field"><div>FINISH</div><input type="time" id="finish-time" value="15:30"></div>
       </div>
     </div>
 
-    <!-- JOB CARD -->
+    <!-- JOB -->
     <div class="card">
-      <h2 style="font-size:24px;color:#00d4ff;margin-bottom:16px;text-align:center">Job Location</h2>
+      <div class="section-title">Job Location</div>
       <select id="job">
         <option value="CSL Broadmeadows">CSL Broadmeadows</option>
         <option value="CSL Tullamarine">CSL Tullamarine</option>
         <option value="CSL Melbourne">CSL Melbourne</option>
         <option value="other">+ Add Custom Location</option>
       </select>
-      <input type="text" id="custom" placeholder="Type new location…" style="display:none;margin-top:8px">
+      <input type="text" id="custom" placeholder="Type new location…" style="display:none;margin-top:12px">
     </div>
 
     <!-- SAVED JOBS -->
     <div class="card">
-      <h2 style="font-size:24px;color:#00d4ff;margin-bottom:16px;text-align:center">Saved Locations</h2>
+      <div class="section-title">Saved Locations</div>
       <div id="saved-jobs"></div>
     </div>
 
-    <!-- NOTES CARD -->
+    <!-- NOTES -->
     <div class="card">
-      <h2 style="font-size:24px;color:#00d4ff;margin-bottom:16px;text-align:center">Today's Notes</h2>
-      <textarea id="notes" placeholder="Type everything here…" style="height:180px"></textarea>
+      <div class="section-title">Today's Notes</div>
+      <textarea id="notes" placeholder="Type everything here…"></textarea>
       <button id="add-btn">ADD TODAY'S ENTRY</button>
     </div>
 
-    <!-- WEEK CARD -->
-    <div class="card output-card">
-      <h2 style="font-size:26px;color:#00d4ff;margin-bottom:20px;text-align:center">Your Week So Far</h2>
+    <!-- WEEK -->
+    <div class="card">
+      <div class="section-title">Your Week So Far</div>
       <div id="output"></div>
     </div>
 
-    <!-- ACTION BUTTONS -->
-    <div style="margin-top: -40px; padding: 0 20px;">
+    <!-- ACTIONS -->
+    <div style="padding: 0 20px; margin-top: -20px;">
       <button class="copy" onclick="copyAll()">Copy Timesheet</button>
       <button class="delete-all" onclick="deleteAll()">DELETE ALL ENTRIES</button>
     </div>
@@ -283,7 +308,7 @@
       particles.push({
         x: Math.random() * canvas.width,
         y: Math.random() * canvas.height,
-        radius: Math.random() * 1.8 + 1,
+        radius: Math.random() * 1.5 + 1,
         speed: Math.random() * 0.4 + 0.2,
         angle: Math.random() * Math.PI * 2
       });
@@ -343,7 +368,7 @@
       let html = customJobs.map((j, i) =>
         `<div class="job-item"><span>${j}</span><button class="delete-x" onclick="customJobs.splice(${i},1);saveJobs()">X</button></div>`
       ).join('');
-      document.getElementById('saved-jobs').innerHTML = html || '<div style="color:#666;padding:20px;text-align:center;font-size:16px">No custom locations yet</div>';
+      document.getElementById('saved-jobs').innerHTML = html || '<div style="color:#666;padding:20px;text-align:center;font-size:17px">No custom locations yet</div>';
       while (jobSelect.options.length > 4) jobSelect.remove(4);
       customJobs.forEach(j => jobSelect.add(new Option(j, j), jobSelect.options[jobSelect.options.length - 1]));
     }
@@ -418,7 +443,7 @@
           </div>`;
         });
       });
-      document.getElementById('output').innerHTML = html || '<div style="text-align:center;padding:50px;color:#666;font-size:16px">No entries yet</div>';
+      document.getElementById('output').innerHTML = html || '<div style="text-align:center;padding:60px;color:#666;font-size:17px">No entries yet</div>';
     }
 
     function copyAll() {
