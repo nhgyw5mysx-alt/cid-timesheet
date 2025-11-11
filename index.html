@@ -4,62 +4,94 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>TimeLatch</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@600;700&display=swap" rel="stylesheet">
+
 <style>
   *{box-sizing:border-box;margin:0}
   body{font-family:-apple-system,Arial,sans-serif;background:#0a0e1a;color:white;display:flex;justify-content:center;min-height:100vh;overflow-x:hidden}
   .app{max-width:500px;width:100%;padding:16px 12px}
-  .header{text-align:center;padding:16px 0;background:#0f1527;margin-bottom:20px;border-radius:18px;overflow:hidden;box-shadow:0 4px 12px rgba(0,212,255,0.1)}
-  h1{margin:0;font-size:28px;font-weight:bold}
-  .logo-img{width:100px;height:auto;margin:12px auto 6px;display:block;border-radius:12px;box-shadow:0 0 20px rgba(0,212,255,0.3)}
-  .today-date{text-align:center;font-size:28px;font-weight:bold;color:#00d4ff;margin:15px 0;text-shadow:0 0 8px rgba(0,212,255,0.4)}
+  
+  /* GLASSMORPHISM */
+  .header, .section, .day, .time-field {
+    background: rgba(20, 26, 46, 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(0, 212, 255, 0.2);
+    box-shadow: 0 8px 32px rgba(0, 212, 255, 0.1);
+  }
+  .header{text-align:center;padding:16px 0;margin-bottom:20px;border-radius:18px;overflow:hidden;position:relative}
+  
+  /* LOGO GLOW PULSE */
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 20px rgba(0,212,255,0.3); }
+    50% { box-shadow: 0 0 35px rgba(0,212,255,0.6); }
+  }
+  .logo-img{
+    width:100px;height:auto;margin:12px auto 6px;display:block;border-radius:12px;
+    animation: pulse 3s infinite;
+  }
+
+  /* EXO 2 + LINE EFFECT */
+  h1, h2, .today-date {
+    font-family: 'Exo 2', sans-serif !important;
+    letter-spacing: 0.5px;
+    position: relative;
+    display: inline-block;
+  }
+  h1{margin:0;font-size:32px;font-weight:700}
+  h2{text-align:center;margin:0 0 12px 0;font-size:22px;color:#00d4ff;padding-bottom:8px}
+  h2::after, .today-date::after {
+    content: '';position: absolute;width: 0;height: 3px;bottom: 0;left: 50%;
+    background: linear-gradient(90deg, transparent, #00d4ff, transparent);
+    transition: width 0.5s ease, left 0.5s ease;transform: translateX(-50%);
+    border-radius: 2px;box-shadow: 0 0 8px rgba(0,212,255,0.6);
+  }
+  h2:hover::after, .today-date:hover::after { width: 80%; }
+
+  .today-date{text-align:center;font-size:28px;font-weight:700;color:#00d4ff;margin:15px 0;text-shadow:0 0 8px rgba(0,212,255,0.4)}
   .time-inputs{display:flex;gap:10px;margin:20px 0}
-  .time-field{flex:1;background:#141a2e;border-radius:16px;overflow:hidden;display:flex;flex-direction:column;justify-content:center;align-items:center;border:1px solid rgba(0,212,255,0.2);padding:12px 0}
+  .time-field{flex:1;border-radius:16px;overflow:hidden;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:12px 0}
   .time-field > div{font-size:17px;margin-bottom:4px;color:#00d4ff}
   .time-field input{width:100%;background:transparent;border:none;color:white;font-size:36px;font-weight:bold;text-align:center;padding:8px 0;outline:none}
-  .section{background:#141a2e;border-radius:18px;padding:18px;margin:16px 0;overflow:hidden;border:1px solid rgba(0,212,255,0.15)}
+  .section{border-radius:18px;padding:18px;margin:16px 0;overflow:hidden}
   select, input, textarea{
-    width:100%;
-    padding:16px;
-    background:rgba(255,255,255,0.08);
-    border:1px solid rgba(0,212,255,0.2);
-    border-radius:14px;
-    color:white;
-    font-size:18px;
-    margin:8px 0;
+    width:100%;padding:16px;background:rgba(255,255,255,0.08);border:1px solid rgba(0,212,255,0.2);
+    border-radius:14px;color:white;font-size:18px;margin:8px 0;
   }
-  select:focus, input:focus, textarea:focus{
-    border-color:#00d4ff;
-    outline:none;
-    box-shadow:0 0 8px rgba(0,212,255,0.3);
-  }
+  select:focus, input:focus, textarea:focus{border-color:#00d4ff;outline:none;box-shadow:0 0 8px rgba(0,212,255,0.3)}
+
+  /* BUTTON RIPPLE EFFECT */
   button{
-    background:#00d4ff;
-    color:#0a0e1a;
-    padding:18px;
-    border:none;
-    border-radius:14px;
-    font-size:21px;
-    margin:10px 0;
-    width:100%;
-    font-weight:bold;
-    transition:0.3s;
-    box-shadow:0 4px 12px rgba(0,212,255,0.3);
+    position: relative;overflow: hidden;background:#00d4ff;color:#0a0e1a;padding:18px;
+    border:none;border-radius:14px;font-size:21px;margin:10px 0;width:100%;font-weight:bold;
+    transition:0.3s;box-shadow:0 4px 12px rgba(0,212,255,0.3);cursor:pointer;
   }
+  button::after{
+    content:'';position:absolute;top:50%;left:50%;width:5px;height:5px;background:rgba(255,255,255,0.5);
+    opacity:0;border-radius:100%;transform:scale(1) translate(-50%,-50%);transition:opacity 1s,transform 0.5s;
+  }
+  button:active::after{opacity:1;transform:scale(100) translate(-50%,-50%);transition:0s;}
   button:hover{transform:translateY(-2px);box-shadow:0 6px 16px rgba(0,212,255,0.4)}
   .copy{background:#00ff9d;color:#0a0e1a;padding:22px;font-size:24px}
   .delete-all{background:#ff3b5c;color:white;padding:22px;font-size:24px}
-  .day{background:#141a2e;padding:18px;margin:12px 0;border-radius:16px;overflow:hidden;border:1px solid rgba(0,212,255,0.1)}
+  
+  .day{border-radius:16px;overflow:hidden;margin:12px 0}
   pre{background:rgba(0,0,0,0.3);padding:14px;border-radius:12px;white-space:pre-wrap;font-size:17px;margin:8px 0}
   .job-item{display:flex;justify-content:space-between;align-items:center;background:rgba(0,212,255,0.1);padding:12px;margin:6px 0;border-radius:12px;font-size:17px;overflow:hidden;border:1px solid rgba(0,212,255,0.2)}
   .delete-x{background:#ff3b5c;color:white;border:none;width:34px;height:34px;border-radius:50%;font-size:18px;font-weight:bold}
   .ot{color:#00ff9d;font-weight:bold;text-shadow:0 0 6px rgba(0,255,157,0.5)}
-  h2{text-align:center;margin:0 0 12px 0;font-size:20px;color:#00d4ff}
+
+  /* LIVE MONEY COUNTER */
+  .money-counter{
+    text-align:center;font-size:20px;color:#00ff9d;margin:20px 0;
+    font-family:'Exo 2',sans-serif;font-weight:700;
+  }
 </style>
 </head>
 <body>
 <div class="app">
 
-  <!-- LOGO + TITLE -->
   <div class="header">
     <img src="IMG_2776.jpeg" alt="TimeLatch Logo" class="logo-img">
     <h1>TimeLatch</h1>
@@ -71,6 +103,9 @@
   </div>
 
   <div class="today-date" id="today-date"></div>
+
+  <!-- LIVE $53/HR COUNTER -->
+  <div class="money-counter" id="money-counter">$0.00 earned today</div>
 
   <div class="time-inputs">
     <div class="time-field">
@@ -128,11 +163,10 @@
   let userName = localStorage.getItem('timelatch_name') || '';
   if(userName) document.getElementById('user-name').value = userName;
 
-  function save(){ localStorage.setItem('timelatch_week', JSON.stringify(week)) }
-  function saveJobs(){ localStorage.setItem('timelatch_jobs', JSON.stringify(customJobs)); renderJobs() }
-  function saveName(){ localStorage.setItem('timelatch_name', document.getElementById('user-name').value.trim() || 'Your') }
+  const moneyCounter = document.getElementById('money-counter');
+  let startTime = null;
 
-  const jobSelect = document.getElementById('job');
+  function save(){ localStorage.setItem('timelatch_week', JSON.stringify(week)) }
   jobSelect.onchange = () => document.getElementById('custom').style.display = jobSelect.value==='other' ? 'block' : 'none';
 
   function renderJobs(){
@@ -145,6 +179,21 @@
   }
 
   function timeToMins(t){ const [h,m]=t.split(':').map(Number); return h*60+m; }
+
+  function updateMoney(){
+    if(!week[today] || week[today].length === 0) {
+      moneyCounter.innerText = '$0.00 earned today';
+      return;
+    }
+    let totalMins = 0;
+    week[today].forEach(e => {
+      const [s,f] = e.times.split(' – ');
+      totalMins += timeToMins(f) - timeToMins(s);
+    });
+    const hours = totalMins / 60;
+    const money = (hours * 53).toFixed(2);
+    moneyCounter.innerText = `$${money} earned today`;
+  }
 
   function addDay(){
     saveName();
@@ -192,12 +241,9 @@
     const entry = {times: start+' – '+finish, paid, ot: ot.toFixed(2), notes, job};
     if(!week[today]) week[today] = [];
     week[today].push(entry);
-    save(); render();
+    save(); render(); updateMoney();
 
-    // VIBRATION
-    if ('vibrate' in navigator) {
-      navigator.vibrate(100);
-    }
+    if ('vibrate' in navigator) { navigator.vibrate(100); }
 
     document.getElementById('notes').value = '';
     jobSelect.value = 'CSL Broadmeadows';
@@ -219,6 +265,7 @@
       });
     });
     document.getElementById('output').innerHTML = html || '<div style="text-align:center;padding:50px;color:#666">No entries yet</div>';
+    updateMoney();
   }
 
   function copyAll(){
@@ -229,21 +276,4 @@
       const dayName = new Date(date+'T12:00:00').toLocaleDateString('en-AU',{...melb,weekday:'long',day:'numeric',month:'short'});
       week[date].forEach(e => {
         const otTag = e.ot > 0 ? ` (OT: ${e.ot} hrs)` : '';
-        text += `${dayName} | ${e.job}\n${e.times}   ${e.paid} hrs${otTag}\n${e.notes}\n\n`;
-      });
-    });
-    navigator.clipboard.writeText(text);
-    alert('COPIED! Paste into email');
-  }
-
-  function deleteAll(){
-    if(confirm('DELETE EVERYTHING?')){
-      week = {}; save(); render(); alert('ALL GONE');
-    }
-  }
-
-  render();
-  renderJobs();
-</script>
-</body>
-</html>
+        text += `${dayName} | ${e.job}\n${e.times}   ${e.paid} hrs${otTag}\n
