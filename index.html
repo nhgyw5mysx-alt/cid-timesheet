@@ -17,7 +17,7 @@
   .time-field > div{font-size:17px;margin-bottom:4px;color:#00d4ff}
   .time-field input{width:100%;background:transparent;border:none;color:white;font-size:36px;font-weight:bold;text-align:center;padding:8px 0;outline:none}
   .section{background:#141a2e;border-radius:18px;padding:18px;margin:16px 0;overflow:hidden;border:1px solid rgba(0,212,255,0.15)}
-  select,input,textarea{width:100%;padding:16px;background:rgba(255,255,255,0.08);border:1px solid rgba(0,212,255,0.2);border-radius:14px;color:white;font-size:18px;margin:8px 0}
+  select,input,textarea{width:100%;padding:16px !important;background:rgba(255,255,255,0.08);border:1px solid rgba(0,212,255,0.2);border-radius:14px;color:white;font-size:18px;margin:8px 0}
   select:focus,input:focus,textarea:focus{border-color:#00d4ff;outline:none;box-shadow:0 0 8px rgba(0,212,255,0.3)}
   button{background:#00d4ff;color:#0a0e1a;padding:18px;border:none;border-radius:14px;font-size:21px;margin:10px 0;width:100%;font-weight:bold;transition:0.3s;box-shadow:0 4px 12px rgba(0,212,255,0.3)}
   button:hover{transform:translateY(-2px);box-shadow:0 6px 16px rgba(0,212,255,0.4)}
@@ -92,65 +92,4 @@
   const now = new Date();
   const melb = {timeZone:'Australia/Melbourne'};
   document.getElementById('today-date').innerText = now.toLocaleDateString('en-AU', {...melb, weekday:'long', day:'numeric', month:'long', year:'numeric'});
-  const today = now.toLocaleDateString('en-CA', melb);
-
-  const lastMonday = new Date(now);
-  lastMonday.setDate(now.getDate() - ((now.getDay() + 6) % 7));
-  const weekEnding = lastMonday.toLocaleDateString('en-AU', {...melb, weekday:'long', day:'numeric', month:'long', year:'numeric'});
-
-  let week = JSON.parse(localStorage.getItem('timelatch_week') || '{}');
-  let customJobs = JSON.parse(localStorage.getItem('timelatch_jobs') || '[]');
-  let userName = localStorage.getItem('timelatch_name') || '';
-  if(userName) document.getElementById('user-name').value = userName;
-
-  function save(){ localStorage.setItem('timelatch_week', JSON.stringify(week)) }
-  function saveJobs(){ localStorage.setItem('timelatch_jobs', JSON.stringify(customJobs)); renderJobs() }
-  function saveName(){ localStorage.setItem('timelatch_name', document.getElementById('user-name').value.trim() || 'Your') }
-
-  const jobSelect = document.getElementById('job');
-  jobSelect.onchange = () => document.getElementById('custom').style.display = jobSelect.value==='other' ? 'block' : 'none';
-
-  function renderJobs(){
-    let html = customJobs.map((j,i) => 
-      `<div class="job-item"><span>${j}</span><button class="delete-x" onclick="customJobs.splice(${i},1);saveJobs()">X</button></div>`
-    ).join('');
-    document.getElementById('saved-jobs').innerHTML = html || '<div style="color:#666;padding:16px;text-align:center">No custom locations yet</div>';
-    while(jobSelect.options.length > 4) jobSelect.remove(4);
-    customJobs.forEach(j => jobSelect.add(new Option(j,j), jobSelect.options[jobSelect.options.length-1]));
-  }
-
-  function timeToMins(t){ const [h,m]=t.split(':').map(Number); return h*60+m; }
-
-  function addDay(){
-    saveName();
-    let job = jobSelect.value;
-    if(job==='other'){
-      job = document.getElementById('custom').value.trim();
-      if(!job){ alert('Type a location!'); return; }
-      if(!customJobs.includes(job)){ customJobs.unshift(job); saveJobs(); }
-    }
-    const notes = document.getElementById('notes').value.trim();
-    if(!notes){ alert('Add notes!'); return; }
-
-    const start = document.getElementById('start-time').value || "07:00";
-    const finish = document.getElementById('finish-time').value || "15:30";
-    const startMins = timeToMins(start);
-    const finishMins = timeToMins(finish);
-
-    if(week[today]){
-      for(let e of week[today]){
-        const eStart = timeToMins(e.times.split(' – ')[0]);
-        const eEnd = timeToMins(e.times.split(' – ')[1]);
-        if (startMins < eEnd && finishMins > eStart) {
-          alert('TIME CLASH! Already have ' + e.times); return;
-        }
-      }
-    }
-
-    const raw = (finishMins - startMins) / 60;
-    const isSat = now.getDay() === 6;
-
-    let normal = 0, ot = 0;
-    if(isSat){
-      ot = raw;
-    }
+  const today = now.to
