@@ -36,7 +36,7 @@
       z-index: 1;
     }
 
-    /* HEADER – CLEAN */
+    /* HEADER */
     .header {
       text-align: center;
       margin-bottom: 32px;
@@ -75,7 +75,7 @@
       text-shadow: 0 0 10px rgba(0,212,255,0.4);
     }
 
-    /* NO DARK BOXES – ONLY MINIMAL TIME BOXES */
+    /* UNIFORM SECTIONS – NO DARK BOXES */
     .section {
       margin-bottom: 28px;
       padding: 0 8px;
@@ -89,7 +89,7 @@
       font-weight: 700;
     }
 
-    /* NAME INPUT – NO BOX */
+    /* NAME INPUT */
     #user-name {
       width: 100%;
       padding: 18px;
@@ -101,16 +101,16 @@
       text-align: center;
     }
 
-    /* TIME – SMALL BOXES AROUND TIMES ONLY */
+    /* TIME – SMALL BOXES, TEXT FITS 100% */
     .time-inputs {
       display: flex;
-      gap: 20px;
+      gap: 18px;
       margin: 20px 0;
       justify-content: center;
     }
     .time-field {
       flex: 1;
-      max-width: 140px;
+      max-width: 135px;
       text-align: center;
     }
     .time-field > div {
@@ -123,22 +123,27 @@
       background: rgba(20, 26, 46, 0.7);
       border: 1px solid rgba(0,212,255,0.3);
       border-radius: 18px;
-      padding: 12px 8px;
+      padding: 10px 4px;
       backdrop-filter: blur(8px);
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
     .time-box input {
       background: transparent;
       border: none;
       color: white;
-      font-size: 34px;
+      font-size: 26px;
       font-weight: bold;
       text-align: center;
       width: 100%;
       outline: none;
+      letter-spacing: -0.5px;
     }
 
-    /* JOB & NOTES – NO DARK BOX */
-    select, textarea {
+    /* JOB, NOTES, WEEK – SAME STYLE */
+    select, textarea, #output {
       width: 100%;
       padding: 18px;
       background: rgba(255, 255, 255, 0.08);
@@ -157,6 +162,27 @@
       height: 160px;
       resize: none;
     }
+
+    /* WEEK ENTRIES */
+    .day {
+      background: rgba(20, 26, 46, 0.85);
+      border-radius: 18px;
+      padding: 18px;
+      margin: 14px 0;
+      border: 1px solid rgba(0,212,255,0.2);
+    }
+    pre {
+      background: rgba(0,0,0,0.3);
+      padding: 14px;
+      border-radius: 14px;
+      white-space: pre-wrap;
+      font-size: 17px;
+      margin: 10px 0;
+      line-height: 1.6;
+      max-height: 180px;
+      overflow-y: auto;
+    }
+    .ot { color: #00ff9d; font-weight: bold; text-shadow: 0 0 6px rgba(0,255,157,0.5); }
 
     /* BUTTONS */
     button {
@@ -179,38 +205,6 @@
     }
     .copy { background: #00ff9d; padding: 24px; font-size: 26px; }
     .delete-all { background: #ff3b5c; color: white; padding: 24px; font-size: 26px; }
-
-    /* WEEK – ONLY THIS HAS FULL BORDER */
-    .week-card {
-      background: rgba(20, 26, 46, 0.92);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border: 1px solid rgba(0, 212, 255, 0.3);
-      border-radius: 24px;
-      padding: 24px;
-      margin: 28px 0;
-      box-shadow: 0 10px 28px rgba(0, 212, 255, 0.15);
-    }
-
-    .day {
-      background: rgba(20, 26, 46, 0.85);
-      border-radius: 18px;
-      padding: 18px;
-      margin: 14px 0;
-      border: 1px solid rgba(0,212,255,0.2);
-    }
-    pre {
-      background: rgba(0,0,0,0.3);
-      padding: 14px;
-      border-radius: 14px;
-      white-space: pre-wrap;
-      font-size: 17px;
-      margin: 10px 0;
-      line-height: 1.6;
-      max-height: 180px;
-      overflow-y: auto;
-    }
-    .ot { color: #00ff9d; font-weight: bold; text-shadow: 0 0 6px rgba(0,255,157,0.5); }
 
     .job-item {
       display: flex;
@@ -236,7 +230,6 @@
   </style>
 </head>
 <body>
-  <!-- PARTICLES -->
   <canvas id="particles"></canvas>
 
   <div class="app">
@@ -256,7 +249,7 @@
       <input type="text" id="user-name" placeholder="e.g. Daniel">
     </div>
 
-    <!-- TIME – SMALL BOXES -->
+    <!-- TIME – FITS PERFECTLY -->
     <div class="section">
       <div class="time-inputs">
         <div class="time-field">
@@ -295,8 +288,8 @@
       <button id="add-btn">ADD TODAY'S ENTRY</button>
     </div>
 
-    <!-- WEEK – ONLY FULL BORDER -->
-    <div class="week-card">
+    <!-- WEEK – SAME STYLE AS OTHERS -->
+    <div class="section">
       <div class="section-title">Your Week So Far</div>
       <div id="output"></div>
     </div>
