@@ -12,7 +12,7 @@
   body{font-family:-apple-system,Arial,sans-serif;background:#0a0e1a;color:white;display:flex;justify-content:center;min-height:100vh;overflow-x:hidden}
   .app{max-width:500px;width:100%;padding:16px 12px}
   
-  /* GLASSMORPHISM – ONLY ON CARDS (NOT INPUTS) */
+  /* GLASSMORPHISM – CARDS ONLY */
   .header, .section, .day {
     background: rgba(20, 26, 46, 0.7);
     backdrop-filter: blur(12px);
@@ -23,7 +23,7 @@
   }
   .header{text-align:center;padding:16px 0;margin-bottom:20px;overflow:hidden;position:relative}
   
-  /* LOGO GLOW PULSE */
+  /* LOGO PULSE */
   @keyframes pulse {
     0%, 100% { box-shadow: 0 0 20px rgba(0,212,255,0.3); }
     50% { box-shadow: 0 0 35px rgba(0,212,255,0.6); }
@@ -53,7 +53,7 @@
   .today-date{text-align:center;font-size:28px;font-weight:700;color:#00d4ff;margin:15px 0;text-shadow:0 0 8px rgba(0,212,255,0.4)}
   .time-inputs{display:flex;gap:10px;margin:20px 0}
   
-  /* TIME FIELDS – NO BLUR → iOS SAFE */
+  /* TIME FIELDS – NO BLUR (iOS SAFE) */
   .time-field{
     flex:1;background:#141a2e;border-radius:16px;overflow:hidden;
     display:flex;flex-direction:column;justify-content:center;align-items:center;
@@ -136,7 +136,7 @@
   <div class="section">
     <h2>Today's Notes</h2>
     <textarea id="notes" placeholder="Type everything here…" style="height:200px"></textarea>
-    <button onclick="addDay()">ADD TODAY'S ENTRY</button>
+    <button id="add-btn">ADD TODAY'S ENTRY</button>
   </div>
 
   <div style="text-align:center;margin:28px 0"><h2>Your Week So Far</h2></div>
@@ -175,12 +175,13 @@
     ).join('');
     document.getElementById('saved-jobs').innerHTML = html || '<div style="color:#666;padding:16px;text-align:center">No custom locations yet</div>';
     while(jobSelect.options.length > 4) jobSelect.remove(4);
-    customJobs.forEach(j => jobSelect.add(new Option saw(j,j), jobSelect.options[jobSelect.options.length-1]));
+    customJobs.forEach(j => jobSelect.add(new Option(j,j), jobSelect.options[jobSelect.options.length-1]));
   }
 
   function timeToMins(t){ const [h,m]=t.split(':').map(Number); return h*60+m; }
 
-  function addDay(){
+  // VIBRATION + SUBMIT ON BUTTON CLICK
+  document.getElementById('add-btn').addEventListener('click', function() {
     saveName();
     let job = jobSelect.value;
     if(job==='other'){
@@ -228,14 +229,17 @@
     week[today].push(entry);
     save(); render();
 
-    if ('vibrate' in navigator) { navigator.vibrate(100); }
+    // VIBRATION AFTER USER INTERACTION
+    if ('vibrate' in navigator) {
+      navigator.vibrate([100, 50, 100]);
+    }
 
     document.getElementById('notes').value = '';
     jobSelect.value = 'CSL Broadmeadows';
     document.getElementById('custom').style.display = 'none';
     document.getElementById('custom').value = '';
     alert('ENTRY ADDED!');
-  }
+  });
 
   function render(){
     let html = '';
