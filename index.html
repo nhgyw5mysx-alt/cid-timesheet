@@ -1,284 +1,480 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>TimeLatch</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>TimeLatch</title>
 
-<link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@600;700&display=swap" rel="stylesheet">
+  <!-- Google Font: Exo 2 -->
+  <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@600;700&display=swap" rel="stylesheet">
 
-<style>
-  *{box-sizing:border-box;margin:0}
-  body{font-family:-apple-system,Arial,sans-serif;background:#0a0e1a;color:white;display:flex;justify-content:center;min-height:100vh;overflow-x:hidden}
-  .app{max-width:500px;width:100%;padding:16px 12px}
-  
-  /* GLASSMORPHISM – CARDS ONLY */
-  .header, .section, .day {
-    background: rgba(20, 26, 46, 0.7);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(0, 212, 255, 0.2);
-    box-shadow: 0 8px 32px rgba(0, 212, 255, 0.1);
-    border-radius: 18px;
-  }
-  .header{text-align:center;padding:16px 0;margin-bottom:20px;overflow:hidden;position:relative}
-  
-  /* LOGO PULSE */
-  @keyframes pulse {
-    0%, 100% { box-shadow: 0 0 20px rgba(0,212,255,0.3); }
-    50% { box-shadow: 0 0 35px rgba(0,212,255,0.6); }
-  }
-  .logo-img{
-    width:100px;height:auto;margin:12px auto 6px;display:block;border-radius:12px;
-    animation: pulse 3s infinite;
-  }
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+      background: #0a0e1a;
+      color: white;
+      display: flex;
+      justify-content: center;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    .app {
+      max-width: 500px;
+      width: 100%;
+      padding: 16px 12px;
+    }
 
-  /* EXO 2 + LINE EFFECT */
-  h1, h2, .today-date {
-    font-family: 'Exo 2', sans-serif !important;
-    letter-spacing: 0.5px;
-    position: relative;
-    display: inline-block;
-  }
-  h1{margin:0;font-size:32px;font-weight:700}
-  h2{text-align:center;margin:0 0 12px 0;font-size:22px;color:#00d4ff;padding-bottom:8px}
-  h2::after, .today-date::after {
-    content: '';position: absolute;width: 0;height: 3px;bottom: 0;left: 50%;
-    background: linear-gradient(90deg, transparent, #00d4ff, transparent);
-    transition: width 0.5s ease, left 0.5s ease;transform: translateX(-50%);
-    border-radius: 2px;box-shadow: 0 0 8px rgba(0,212,255,0.6);
-  }
-  h2:hover::after, .today-date:hover::after { width: 80%; }
+    /* SHARPER GLASSMORPHISM */
+    .header, .section, .day {
+      background: rgba(20, 26, 46, 0.88);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(0, 212, 255, 0.35);
+      box-shadow: 0 6px 20px rgba(0, 212, 255, 0.18);
+      border-radius: 16px;
+      overflow: hidden;
+      margin-bottom: 16px;
+    }
+    .header {
+      text-align: center;
+      padding: 18px 0;
+      margin-bottom: 20px;
+      position: relative;
+    }
 
-  .today-date{text-align:center;font-size:28px;font-weight:700;color:#00d4ff;margin:15px 0;text-shadow:0 0 8px rgba(0,212,255,0.4)}
-  .time-inputs{display:flex;gap:10px;margin:20px 0}
-  
-  /* TIME FIELDS – NO BLUR (iOS SAFE) */
-  .time-field{
-    flex:1;background:#141a2e;border-radius:16px;overflow:hidden;
-    display:flex;flex-direction:column;justify-content:center;align-items:center;
-    border:1px solid rgba(0,212,255,0.2);padding:12px 0;
-  }
-  .time-field > div{font-size:17px;margin-bottom:4px;color:#00d4ff}
-  .time-field input{width:100%;background:transparent;border:none;color:white;font-size:36px;font-weight:bold;text-align:center;padding:8px 0;outline:none}
-  
-  .section{padding:18px;margin:16px 0;overflow:hidden}
-  select, input, textarea{
-    width:100%;padding:16px;background:rgba(255,255,255,0.08);border:1px solid rgba(0,212,255,0.2);
-    border-radius:14px;color:white;font-size:18px;margin:8px 0;
-  }
-  select:focus, input:focus, textarea:focus{border-color:#00d4ff;outline:none;box-shadow:0 0 8px rgba(0,212,255,0.3)}
+    /* LOGO PULSE – SUBTLE & PROFESSIONAL */
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 18px rgba(0, 212, 255, 0.25); }
+      50% { box-shadow: 0 0 28px rgba(0, 212, 255, 0.45); }
+    }
+    .logo-img {
+      width: 100px;
+      height: auto;
+      margin: 12px auto 6px;
+      display: block;
+      border-radius: 12px;
+      animation: pulse 3s infinite ease-in-out;
+    }
 
-  /* BUTTON RIPPLE */
-  button{
-    position: relative;overflow: hidden;background:#00d4ff;color:#0a0e1a;padding:18px;
-    border:none;border-radius:14px;font-size:21px;margin:10px 0;width:100%;font-weight:bold;
-    transition:0.3s;box-shadow:0 4px 12px rgba(0,212,255,0.3);cursor:pointer;
-  }
-  button::after{
-    content:'';position:absolute;top:50%;left:50%;width:5px;height:5px;background:rgba(255,255,255,0.5);
-    opacity:0;border-radius:100%;transform:scale(1) translate(-50%,-50%);transition:opacity 1s,transform 0.5s;
-  }
-  button:active::after{opacity:1;transform:scale(100) translate(-50%,-50%);transition:0s;}
-  button:hover{transform:translateY(-2px);box-shadow:0 6px 16px rgba(0,212,255,0.4)}
-  .copy{background:#00ff9d;color:#0a0e1a;padding:22px;font-size:24px}
-  .delete-all{background:#ff3b5c;color:white;padding:22px;font-size:24px}
-  
-  .day{margin:12px 0;overflow:hidden}
-  pre{background:rgba(0,0,0,0.3);padding:14px;border-radius:12px;white-space:pre-wrap;font-size:17px;margin:8px 0}
-  .job-item{display:flex;justify-content:space-between;align-items:center;background:rgba(0,212,255,0.1);padding:12px;margin:6px 0;border-radius:12px;font-size:17px;overflow:hidden;border:1px solid rgba(0,212,255,0.2)}
-  .delete-x{background:#ff3b5c;color:white;border:none;width:34px;height:34px;border-radius:50%;font-size:18px;font-weight:bold}
-  .ot{color:#00ff9d;font-weight:bold;text-shadow:0 0 6px rgba(0,255,157,0.5)}
-</style>
+    /* HEADINGS – EXO 2 + LINE EFFECT */
+    h1, h2, .today-date {
+      font-family: 'Exo 2', sans-serif !important;
+      letter-spacing: 0.5px;
+      position: relative;
+      display: inline-block;
+    }
+    h1 {
+      margin: 0;
+      font-size: 32px;
+      font-weight: 700;
+    }
+    h2 {
+      text-align: center;
+      margin: 0 0 12px 0;
+      font-size: 22px;
+      color: #00d4ff;
+      padding-bottom: 8px;
+    }
+    h2::after, .today-date::after {
+      content: '';
+      position: absolute;
+      width: 0;
+      height: 3px;
+      bottom: 0;
+      left: 50%;
+      background: linear-gradient(90deg, transparent, #00d4ff, transparent);
+      transition: width 0.5s ease, left 0.5s ease;
+      transform: translateX(-50%);
+      border-radius: 2px;
+      box-shadow: 0 0 8px rgba(0, 212, 255, 0.6);
+    }
+    h2:hover::after, .today-date:hover::after {
+      width: 80%;
+    }
+
+    .today-date {
+      text-align: center;
+      font-size: 28px;
+      font-weight: 700;
+      color: #00d4ff;
+      margin: 15px 0;
+      text-shadow: 0 0 8px rgba(0, 212, 255, 0.4);
+    }
+
+    .time-inputs {
+      display: flex;
+      gap: 10px;
+      margin: 20px 0;
+    }
+    .time-field {
+      flex: 1;
+      background: #141a2e;
+      border-radius: 16px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      border: 1px solid rgba(0, 212, 255, 0.25);
+      padding: 12px 0;
+    }
+    .time-field > div {
+      font-size: 17px;
+      margin-bottom: 4px;
+      color: #00d4ff;
+    }
+    .time-field input {
+      width: 100%;
+      background: transparent;
+      border: none;
+      color: white;
+      font-size: 36px;
+      font-weight: bold;
+      text-align: center;
+      padding: 8px 0;
+      outline: none;
+    }
+
+    .section {
+      padding: 18px;
+      margin: 16px 0;
+    }
+    select, input, textarea {
+      width: 100%;
+      padding: 16px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(0, 212, 255, 0.25);
+      border-radius: 14px;
+      color: white;
+      font-size: 18px;
+      margin: 8px 0;
+    }
+    select:focus, input:focus, textarea:focus {
+      border-color: #00d4ff;
+      outline: none;
+      box-shadow: 0 0 8px rgba(0, 212, 255, 0.3);
+    }
+
+    /* BUTTON RIPPLE EFFECT */
+    button {
+      position: relative;
+      overflow: hidden;
+      background: #00d4ff;
+      color: #0a0e1a;
+      padding: 18px;
+      border: none;
+      border-radius: 14px;
+      font-size: 21px;
+      margin: 10px 0;
+      width: 100%;
+      font-weight: bold;
+      transition: 0.3s;
+      box-shadow: 0 4px 12px rgba(0, 212, 255, 0.3);
+      cursor: pointer;
+    }
+    button::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 5px;
+      height: 5px;
+      background: rgba(255, 255, 255, 0.5);
+      opacity: 0;
+      border-radius: 100%;
+      transform: scale(1) translate(-50%, -50%);
+      transition: opacity 1s, transform 0.5s;
+    }
+    button:active::after {
+      opacity: 1;
+      transform: scale(100) translate(-50%, -50%);
+      transition: 0s;
+    }
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(0, 212, 255, 0.4);
+    }
+    .copy {
+      background: #00ff9d;
+      color: #0a0e1a;
+      padding: 22px;
+      font-size: 24px;
+    }
+    .delete-all {
+      background: #ff3b5c;
+      color: white;
+      padding: 22px;
+      font-size: 24px;
+    }
+
+    /* ENTRIES – FULL TEXT, NO CUT-OFF */
+    .day {
+      margin: 12px 0;
+      padding: 16px;
+      border-radius: 14px;
+      background: rgba(20, 26, 46, 0.85);
+      border: 1px solid rgba(0, 212, 255, 0.2);
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+    }
+    pre {
+      background: rgba(0, 0, 0, 0.3);
+      padding: 14px;
+      border-radius: 12px;
+      white-space: pre-wrap;
+      font-size: 17px;
+      margin: 8px 0;
+      line-height: 1.5;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .job-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(0, 212, 255, 0.1);
+      padding: 12px;
+      margin: 6px 0;
+      border-radius: 12px;
+      font-size: 17px;
+      border: 1px solid rgba(0, 212, 255, 0.2);
+    }
+    .delete-x {
+      background: #ff3b5c;
+      color: white;
+      border: none;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      font-size: 18px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .ot {
+      color: #00ff9d;
+      font-weight: bold;
+      text-shadow: 0 0 6px rgba(0, 255, 157, 0.5);
+    }
+  </style>
 </head>
 <body>
-<div class="app">
+  <div class="app">
 
-  <div class="header">
-    <img src="IMG_2776.jpeg" alt="TimeLatch Logo" class="logo-img">
-    <h1>TimeLatch</h1>
-  </div>
-
-  <div class="section">
-    <h2>Your Name</h2>
-    <input type="text" id="user-name" placeholder="e.g. Daniel" value="">
-  </div>
-
-  <div class="today-date" id="today-date"></div>
-
-  <div class="time-inputs">
-    <div class="time-field">
-      <div>START</div>
-      <input type="time" id="start-time" value="07:00">
+    <!-- HEADER -->
+    <div class="header">
+      <img src="IMG_2776.jpeg" alt="TimeLatch Logo" class="logo-img">
+      <h1>TimeLatch</h1>
     </div>
-    <div class="time-field">
-      <div>FINISH</div>
-      <input type="time" id="finish-time" value="15:30">
+
+    <!-- NAME -->
+    <div class="section">
+      <h2>Your Name</h2>
+      <input type="text" id="user-name" placeholder="e.g. Daniel">
     </div>
+
+    <!-- DATE -->
+    <div class="today-date" id="today-date"></div>
+
+    <!-- TIME INPUTS -->
+    <div class="time-inputs">
+      <div class="time-field">
+        <div>START</div>
+        <input type="time" id="start-time" value="07:00">
+      </div>
+      <div class="time-field">
+        <div>FINISH</div>
+        <input type="time" id="finish-time" value="15:30">
+      </div>
+    </div>
+
+    <!-- JOB LOCATION -->
+    <div class="section">
+      <h2>Job Location</h2>
+      <select id="job">
+        <option value="CSL Broadmeadows">CSL Broadmeadows</option>
+        <option value="CSL Tullamarine">CSL Tullamarine</option>
+        <option value="CSL Melbourne">CSL Melbourne</option>
+        <option value="other">+ Add Custom Location</option>
+      </select>
+      <input type="text" id="custom" placeholder="Type new location…" style="display:none;margin-top:8px">
+    </div>
+
+    <!-- SAVED LOCATIONS -->
+    <div class="section">
+      <h2>Saved Locations</h2>
+      <div id="saved-jobs"></div>
+    </div>
+
+    <!-- NOTES + ADD -->
+    <div class="section">
+      <h2>Today's Notes</h2>
+      <textarea id="notes" placeholder="Type everything here…" style="height:200px"></textarea>
+      <button id="add-btn">ADD TODAY'S ENTRY</button>
+    </div>
+
+    <!-- WEEK SO FAR -->
+    <div style="text-align:center;margin:28px 0"><h2>Your Week So Far</h2></div>
+    <div id="output"></div>
+
+    <!-- ACTIONS -->
+    <button class="copy" onclick="copyAll()">Copy Timesheet</button>
+    <button class="delete-all" onclick="deleteAll()">DELETE ALL ENTRIES</button>
+
   </div>
 
-  <div class="section">
-    <h2>Job Location</h2>
-    <select id="job">
-      <option value="CSL Broadmeadows">CSL Broadmeadows</option>
-      <option value="CSL Tullamarine">CSL Tullamarine</option>
-      <option value="CSL Melbourne">CSL Melbourne</option>
-      <option value="other">+ Add Custom Location</option>
-    </select>
-    <input type="text" id="custom" placeholder="Type new location…" style="display:none;margin-top:8px">
-  </div>
+  <script>
+    const now = new Date();
+    const melb = { timeZone: 'Australia/Melbourne' };
+    document.getElementById('today-date').innerText = now.toLocaleDateString('en-AU', {
+      ...melb,
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    });
+    const today = now.toLocaleDateString('en-CA', melb);
 
-  <div class="section">
-    <h2>Saved Locations</h2>
-    <div id="saved-jobs"></div>
-  </div>
+    const lastMonday = new Date(now);
+    lastMonday.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+    const weekEnding = lastMonday.toLocaleDateString('en-AU', {
+      ...melb,
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    });
 
-  <div class="section">
-    <h2>Today's Notes</h2>
-    <textarea id="notes" placeholder="Type everything here…" style="height:200px"></textarea>
-    <button id="add-btn">ADD TODAY'S ENTRY</button>
-  </div>
+    let week = JSON.parse(localStorage.getItem('timelatch_week') || '{}');
+    let customJobs = JSON.parse(localStorage.getItem('timelatch_jobs') || '[]');
 
-  <div style="text-align:center;margin:28px 0"><h2>Your Week So Far</h2></div>
-  <div id="output"></div>
-
-  <button class="copy" onclick="copyAll()">Copy Timesheet</button>
-  <button class="delete-all" onclick="deleteAll()">DELETE ALL ENTRIES</button>
-
-</div>
-
-<script>
-  const now = new Date();
-  const melb = {timeZone:'Australia/Melbourne'};
-  document.getElementById('today-date').innerText = now.toLocaleDateString('en-AU', {...melb, weekday:'long', day:'numeric', month:'long', year:'numeric'});
-  const today = now.toLocaleDateString('en-CA', melb);
-
-  const lastMonday = new Date(now);
-  lastMonday.setDate(now.getDate() - ((now.getDay() + 6) % 7));
-  const weekEnding = lastMonday.toLocaleDateString('en-AU', {...melb, weekday:'long', day:'numeric', month:'long', year:'numeric'});
-
-  let week = JSON.parse(localStorage.getItem('timelatch_week') || '{}');
-  let customJobs = JSON.parse(localStorage.getItem('timelatch_jobs') || '[]');
-  let userName = localStorage.getItem('timelatch_name') || '';
-  if(userName) document.getElementById('user-name').value = userName;
-
-  function save(){ localStorage.setItem('timelatch_week', JSON.stringify(week)) }
-  function saveJobs(){ localStorage.setItem('timelatch_jobs', JSON.stringify(customJobs)); renderJobs() }
-  function saveName(){ localStorage.setItem('timelatch_name', document.getElementById('user-name').value.trim() || 'Your') }
-
-  const jobSelect = document.getElementById('job');
-  jobSelect.onchange = () => document.getElementById('custom').style.display = jobSelect.value==='other' ? 'block' : 'none';
-
-  function renderJobs(){
-    let html = customJobs.map((j,i) => 
-      `<div class="job-item"><span>${j}</span><button class="delete-x" onclick="customJobs.splice(${i},1);saveJobs()">X</button></div>`
-    ).join('');
-    document.getElementById('saved-jobs').innerHTML = html || '<div style="color:#666;padding:16px;text-align:center">No custom locations yet</div>';
-    while(jobSelect.options.length > 4) jobSelect.remove(4);
-    customJobs.forEach(j => jobSelect.add(new Option(j,j), jobSelect.options[jobSelect.options.length-1]));
-  }
-
-  function timeToMins(t){ const [h,m]=t.split(':').map(Number); return h*60+m; }
-
-  // VIBRATION + SUBMIT ON BUTTON CLICK
-  document.getElementById('add-btn').addEventListener('click', function() {
-    saveName();
-    let job = jobSelect.value;
-    if(job==='other'){
-      job = document.getElementById('custom').value.trim();
-      if(!job){ alert('Type a location!'); return; }
-      if(!customJobs.includes(job)){ customJobs.unshift(job); saveJobs(); }
+    function save() { localStorage.setItem('timelatch_week', JSON.stringify(week)); }
+    function saveJobs() { localStorage.setItem('timelatch_jobs', JSON.stringify(customJobs)); renderJobs(); }
+    function saveName() {
+      const name = document.getElementById('user-name').value.trim();
+      if (name) localStorage.setItem('timelatch_name', name);
     }
-    const notes = document.getElementById('notes').value.trim();
-    if(!notes){ alert('Add notes!'); return; }
 
-    const start = document.getElementById('start-time').value || "07:00";
-    const finish = document.getElementById('finish-time').value || "15:30";
-    const startMins = timeToMins(start);
-    const finishMins = timeToMins(finish);
+    const jobSelect = document.getElementById('job');
+    jobSelect.onchange = () => {
+      document.getElementById('custom').style.display = jobSelect.value === 'other' ? 'block' : 'none';
+    };
 
-    if(week[today]){
-      for(let e of week[today]){
-        const eStart = timeToMins(e.times.split(' – ')[0]);
-        const eEnd = timeToMins(e.times.split(' – ')[1]);
-        if (startMins < eEnd && finishMins > eStart) {
-          alert('TIME CLASH! Already have ' + e.times); return;
+    function renderJobs() {
+      let html = customJobs.map((j, i) =>
+        `<div class="job-item"><span>${j}</span><button class="delete-x" onclick="customJobs.splice(${i},1);saveJobs()">X</button></div>`
+      ).join('');
+      document.getElementById('saved-jobs').innerHTML = html || '<div style="color:#666;padding:16px;text-align:center">No custom locations yet</div>';
+      while (jobSelect.options.length > 4) jobSelect.remove(4);
+      customJobs.forEach(j => jobSelect.add(new Option(j, j), jobSelect.options[jobSelect.options.length - 1]));
+    }
+
+    function timeToMins(t) { const [h, m] = t.split(':').map(Number); return h * 60 + m; }
+
+    document.getElementById('add-btn').addEventListener('click', function () {
+      saveName();
+      let job = jobSelect.value;
+      if (job === 'other') {
+        job = document.getElementById('custom').value.trim();
+        if (!job) { alert('Type a location!'); return; }
+        if (!customJobs.includes(job)) { customJobs.unshift(job); saveJobs(); }
+      }
+      const notes = document.getElementById('notes').value.trim();
+      if (!notes) { alert('Add notes!'); return; }
+
+      const start = document.getElementById('start-time').value || "07:00";
+      const finish = document.getElementById('finish-time').value || "15:30";
+      const startMins = timeToMins(start);
+      const finishMins = timeToMins(finish);
+
+      if (week[today]) {
+        for (let e of week[today]) {
+          const eStart = timeToMins(e.times.split(' – ')[0]);
+          const eEnd = timeToMins(e.times.split(' – ')[1]);
+          if (startMins < eEnd && finishMins > eStart) {
+            alert('TIME CLASH! Already have ' + e.times);
+            return;
+          }
         }
+      }
+
+      const raw = (finishMins - startMins) / 60;
+      const isSat = now.getDay() === 6;
+
+      let normal = 0, ot = 0;
+      if (isSat) {
+        ot = raw;
+      } else {
+        const dayStart = 7 * 60;
+        const dayEnd = 15.5 * 60;
+        const before = Math.max(0, Math.min(finishMins, dayStart) - startMins) / 60;
+        const during = Math.max(0, Math.min(finishMins, dayEnd) - Math.max(startMins, dayStart)) / 60;
+        const after = Math.max(0, finishMins - Math.max(startMins, dayEnd)) / 60;
+        ot = before + after;
+        normal = during > 0 ? during - 0.5 : 0;
+      }
+
+      const paid = (normal + ot).toFixed(2);
+      const entry = { times: start + ' – ' + finish, paid, ot: ot.toFixed(2), notes, job };
+      if (!week[today]) week[today] = [];
+      week[today].push(entry);
+      save();
+      render();
+
+      // VIBRATION (iOS & Android)
+      if ('vibrate' in navigator) {
+        navigator.vibrate([100, 50, 100]);
+      }
+
+      document.getElementById('notes').value = '';
+      jobSelect.value = 'CSL Broadmeadows';
+      document.getElementById('custom').style.display = 'none';
+      document.getElementById('custom').value = '';
+      alert('ENTRY ADDED!');
+    });
+
+    function render() {
+      let html = '';
+      Object.keys(week).sort().reverse().forEach(date => {
+        const dayName = new Date(date + 'T12:00:00').toLocaleDateString('en-AU', { ...melb, weekday: 'long', day: 'numeric', month: 'short' });
+        week[date].forEach(e => {
+          const otTag = e.ot > 0 ? ` <span class="ot">(OT: ${e.ot} hrs)</span>` : '';
+          html += `<div class="day">
+            <b>${dayName}</b> | ${e.job}<br>
+            ${e.times}   <b>${e.paid} hrs</b>${otTag}<pre>${e.notes}</pre>
+          </div>`;
+        });
+      });
+      document.getElementById('output').innerHTML = html || '<div style="text-align:center;padding:50px;color:#666">No entries yet</div>';
+    }
+
+    function copyAll() {
+      saveName();
+      const name = document.getElementById('user-name').value.trim() || 'Your';
+      let text = `${name}’s Timesheet – Week ending ${weekEnding}\n\n`;
+      Object.keys(week).sort().reverse().forEach(date => {
+        const dayName = new Date(date + 'T12:00:00').toLocaleDateString('en-AU', { ...melb, weekday: 'long', day: 'numeric', month: 'short' });
+        week[date].forEach(e => {
+          const otTag = e.ot > 0 ? ` (OT: ${e.ot} hrs)` : '';
+          text += `${dayName} | ${e.job}\n${e.times}   ${e.paid} hrs${otTag}\n${e.notes}\n\n`;
+        });
+      });
+      navigator.clipboard.writeText(text);
+      alert('COPIED! Paste into email');
+    }
+
+    function deleteAll() {
+      if (confirm('DELETE EVERYTHING?')) {
+        week = {};
+        save();
+        render();
+        alert('ALL GONE');
       }
     }
 
-    const raw = (finishMins - startMins) / 60;
-    const isSat = now.getDay() === 6;
-
-    let normal = 0, ot = 0;
-    if(isSat){
-      ot = raw;
-    } else {
-      const dayStart = 7 * 60;
-      const dayEnd = 15.5 * 60;
-      const before = Math.max(0, Math.min(finishMins, dayStart) - startMins) / 60;
-      const during = Math.max(0, Math.min(finishMins, dayEnd) - Math.max(startMins, dayStart)) / 60;
-      const after = Math.max(0, finishMins - Math.max(startMins, dayEnd)) / 60;
-      ot = before + after;
-      normal = during > 0 ? during - 0.5 : 0;
-    }
-
-    const paid = (normal + ot).toFixed(2);
-    const entry = {times: start+' – '+finish, paid, ot: ot.toFixed(2), notes, job};
-    if(!week[today]) week[today] = [];
-    week[today].push(entry);
-    save(); render();
-
-    // VIBRATION AFTER USER INTERACTION
-    if ('vibrate' in navigator) {
-      navigator.vibrate([100, 50, 100]);
-    }
-
-    document.getElementById('notes').value = '';
-    jobSelect.value = 'CSL Broadmeadows';
-    document.getElementById('custom').style.display = 'none';
-    document.getElementById('custom').value = '';
-    alert('ENTRY ADDED!');
-  });
-
-  function render(){
-    let html = '';
-    Object.keys(week).sort().reverse().forEach(date => {
-      const dayName = new Date(date+'T12:00:00').toLocaleDateString('en-AU',{...melb,weekday:'long',day:'numeric',month:'short'});
-      week[date].forEach(e => {
-        const otTag = e.ot > 0 ? ` <span class="ot">(OT: ${e.ot} hrs)</span>` : '';
-        html += `<div class="day">
-          <b>${dayName}</b> | ${e.job}<br>
-          ${e.times}   <b>${e.paid} hrs</b>${otTag}<pre>${e.notes}</pre>
-        </div>`;
-      });
-    });
-    document.getElementById('output').innerHTML = html || '<div style="text-align:center;padding:50px;color:#666">No entries yet</div>';
-  }
-
-  function copyAll(){
-    saveName();
-    const name = document.getElementById('user-name').value.trim() || 'Your';
-    let text = `${name}’s Timesheet – Week ending ${weekEnding}\n\n`;
-    Object.keys(week).sort().reverse().forEach(date => {
-      const dayName = new Date(date+'T12:00:00').toLocaleDateString('en-AU',{...melb,weekday:'long',day:'numeric',month:'short'});
-      week[date].forEach(e => {
-        const otTag = e.ot > 0 ? ` (OT: ${e.ot} hrs)` : '';
-        text += `${dayName} | ${e.job}\n${e.times}   ${e.paid} hrs${otTag}\n${e.notes}\n\n`;
-      });
-    });
-    navigator.clipboard.writeText(text);
-    alert('COPIED! Paste into email');
-  }
-
-  function deleteAll(){
-    if(confirm('DELETE EVERYTHING?')){
-      week = {}; save(); render(); alert('ALL GONE');
-    }
-  }
-
-  render();
-  renderJobs();
-</script>
+    render();
+    renderJobs();
+  </script>
 </body>
 </html>
