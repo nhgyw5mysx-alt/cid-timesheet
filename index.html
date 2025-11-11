@@ -5,28 +5,29 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>TimeLatch</title>
 
-  <!-- Google Font: Exo 2 -->
   <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@600;700&display=swap" rel="stylesheet">
 
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     
-    /* ANIMATED GRADIENT BACKGROUND – RECOMMENDED */
+    /* FLOATING CYAN PARTICLES BACKGROUND */
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
-      background: linear-gradient(-45deg, #0a0e1a, #0f1527, #0a0e1a, #0f1527);
-      background-size: 400% 400%;
-      animation: gradientShift 20s ease infinite;
+      background: #0a0e1a;
       color: white;
       display: flex;
       justify-content: center;
       min-height: 100vh;
-      overflow-x: hidden;
+      overflow: hidden;
+      position: relative;
     }
-    @keyframes gradientShift {
-      0% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
-      100% { background-position: 0% 50%; }
+
+    canvas {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      z-index: 0;
+      pointer-events: none;
     }
 
     .app {
@@ -37,7 +38,6 @@
       z-index: 1;
     }
 
-    /* SHARPER GLASSMORPHISM CARDS */
     .header, .section, .day {
       background: rgba(20, 26, 46, 0.88);
       backdrop-filter: blur(14px);
@@ -54,26 +54,18 @@
       margin-bottom: 20px;
     }
 
-    /* LOGO PULSE – SUBTLE & PRO */
     @keyframes pulse {
       0%, 100% { box-shadow: 0 0 18px rgba(0, 212, 255, 0.25); }
       50% { box-shadow: 0 0 28px rgba(0, 212, 255, 0.45); }
     }
     .logo-img {
-      width: 100px;
-      height: auto;
-      margin: 12px auto 6px;
-      display: block;
-      border-radius: 12px;
-      animation: pulse 3s infinite ease-in-out;
+      width: 100px; height: auto; margin: 12px auto 6px; display: block;
+      border-radius: 12px; animation: pulse 3s infinite ease-in-out;
     }
 
-    /* HEADINGS – EXO 2 + LINE EFFECT */
     h1, h2, .today-date {
       font-family: 'Exo 2', sans-serif !important;
-      letter-spacing: 0.5px;
-      position: relative;
-      display: inline-block;
+      letter-spacing: 0.5px; position: relative; display: inline-block;
     }
     h1 { margin: 0; font-size: 32px; font-weight: 700; }
     h2 { text-align: center; margin: 0 0 12px 0; font-size: 22px; color: #00d4ff; padding-bottom: 8px; }
@@ -112,7 +104,6 @@
       border-color: #00d4ff; outline: none; box-shadow: 0 0 8px rgba(0, 212, 255, 0.3);
     }
 
-    /* BUTTON RIPPLE */
     button {
       position: relative; overflow: hidden; background: #00d4ff; color: #0a0e1a;
       padding: 18px; border: none; border-radius: 14px; font-size: 21px;
@@ -129,7 +120,6 @@
     .copy { background: #00ff9d; color: #0a0e1a; padding: 22px; font-size: 24px; }
     .delete-all { background: #ff3b5c; color: white; padding: 22px; font-size: 24px; }
 
-    /* ENTRIES – FULL TEXT, NO CUT-OFF */
     .day {
       margin: 12px 0; padding: 16px; border-radius: 14px;
       background: rgba(20, 26, 46, 0.85); border: 1px solid rgba(0, 212, 255, 0.2);
@@ -154,30 +144,27 @@
   </style>
 </head>
 <body>
-  <div class="app">
+  <!-- PARTICLE CANVAS -->
+  <canvas id="particles"></canvas>
 
-    <!-- HEADER -->
+  <div class="app">
     <div class="header">
       <img src="IMG_2776.jpeg" alt="TimeLatch Logo" class="logo-img">
       <h1>TimeLatch</h1>
     </div>
 
-    <!-- NAME -->
     <div class="section">
       <h2>Your Name</h2>
       <input type="text" id="user-name" placeholder="e.g. Daniel">
     </div>
 
-    <!-- DATE -->
     <div class="today-date" id="today-date"></div>
 
-    <!-- TIME INPUTS -->
     <div class="time-inputs">
       <div class="time-field"><div>START</div><input type="time" id="start-time" value="07:00"></div>
       <div class="time-field"><div>FINISH</div><input type="time" id="finish-time" value="15:30"></div>
     </div>
 
-    <!-- JOB LOCATION -->
     <div class="section">
       <h2>Job Location</h2>
       <select id="job">
@@ -189,30 +176,64 @@
       <input type="text" id="custom" placeholder="Type new location…" style="display:none;margin-top:8px">
     </div>
 
-    <!-- SAVED LOCATIONS -->
     <div class="section">
       <h2>Saved Locations</h2>
       <div id="saved-jobs"></div>
     </div>
 
-    <!-- NOTES + ADD -->
     <div class="section">
       <h2>Today's Notes</h2>
       <textarea id="notes" placeholder="Type everything here…" style="height:200px"></textarea>
       <button id="add-btn">ADD TODAY'S ENTRY</button>
     </div>
 
-    <!-- WEEK SO FAR -->
     <div style="text-align:center;margin:28px 0"><h2>Your Week So Far</h2></div>
     <div id="output"></div>
 
-    <!-- ACTIONS -->
     <button class="copy" onclick="copyAll()">Copy Timesheet</button>
     <button class="delete-all" onclick="deleteAll()">DELETE ALL ENTRIES</button>
-
   </div>
 
   <script>
+    // PARTICLE BACKGROUND
+    const canvas = document.getElementById('particles');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const particles = [];
+    for (let i = 0; i < 60; i++) {
+      particles.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        radius: Math.random() * 2 + 1,
+        speed: Math.random() * 0.5 + 0.2,
+        angle: Math.random() * Math.PI * 2
+      });
+    }
+
+    function animate() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      particles.forEach(p => {
+        p.x += Math.cos(p.angle) * p.speed;
+        p.y += Math.sin(p.angle) * p.speed;
+        if (p.x < 0 || p.x > canvas.width) p.angle = Math.PI - p.angle;
+        if (p.y < 0 || p.y > canvas.height) p.angle = -p.angle;
+
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(0, 212, 255, 0.6)';
+        ctx.fill();
+      });
+      requestAnimationFrame(animate);
+    }
+    animate();
+    window.addEventListener('resize', () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    });
+
+    // MAIN APP LOGIC
     const now = new Date();
     const melb = { timeZone: 'Australia/Melbourne' };
     document.getElementById('today-date').innerText = now.toLocaleDateString('en-AU', {
@@ -310,7 +331,7 @@
 
     function render() {
       let html = '';
-      Object.keys(week).sort().(reversed).forEach(date => {
+      Object.keys(week).sort().reverse().forEach(date => {
         const dayName = new Date(date + 'T12:00:00').toLocaleDateString('en-AU', { ...melb, weekday: 'long', day: 'numeric', month: 'short' });
         week[date].forEach(e => {
           const otTag = e.ot > 0 ? ` <span class="ot">(OT: ${e.ot} hrs)</span>` : '';
