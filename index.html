@@ -12,15 +12,16 @@
   body{font-family:-apple-system,Arial,sans-serif;background:#0a0e1a;color:white;display:flex;justify-content:center;min-height:100vh;overflow-x:hidden}
   .app{max-width:500px;width:100%;padding:16px 12px}
   
-  /* GLASSMORPHISM */
-  .header, .section, .day, .time-field {
+  /* GLASSMORPHISM – ONLY ON CARDS (NOT INPUTS) */
+  .header, .section, .day {
     background: rgba(20, 26, 46, 0.7);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border: 1px solid rgba(0, 212, 255, 0.2);
     box-shadow: 0 8px 32px rgba(0, 212, 255, 0.1);
+    border-radius: 18px;
   }
-  .header{text-align:center;padding:16px 0;margin-bottom:20px;border-radius:18px;overflow:hidden;position:relative}
+  .header{text-align:center;padding:16px 0;margin-bottom:20px;overflow:hidden;position:relative}
   
   /* LOGO GLOW PULSE */
   @keyframes pulse {
@@ -51,17 +52,24 @@
 
   .today-date{text-align:center;font-size:28px;font-weight:700;color:#00d4ff;margin:15px 0;text-shadow:0 0 8px rgba(0,212,255,0.4)}
   .time-inputs{display:flex;gap:10px;margin:20px 0}
-  .time-field{flex:1;border-radius:16px;overflow:hidden;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:12px 0}
+  
+  /* TIME FIELDS – NO BLUR → iOS SAFE */
+  .time-field{
+    flex:1;background:#141a2e;border-radius:16px;overflow:hidden;
+    display:flex;flex-direction:column;justify-content:center;align-items:center;
+    border:1px solid rgba(0,212,255,0.2);padding:12px 0;
+  }
   .time-field > div{font-size:17px;margin-bottom:4px;color:#00d4ff}
   .time-field input{width:100%;background:transparent;border:none;color:white;font-size:36px;font-weight:bold;text-align:center;padding:8px 0;outline:none}
-  .section{border-radius:18px;padding:18px;margin:16px 0;overflow:hidden}
+  
+  .section{padding:18px;margin:16px 0;overflow:hidden}
   select, input, textarea{
     width:100%;padding:16px;background:rgba(255,255,255,0.08);border:1px solid rgba(0,212,255,0.2);
     border-radius:14px;color:white;font-size:18px;margin:8px 0;
   }
   select:focus, input:focus, textarea:focus{border-color:#00d4ff;outline:none;box-shadow:0 0 8px rgba(0,212,255,0.3)}
 
-  /* BUTTON RIPPLE EFFECT */
+  /* BUTTON RIPPLE */
   button{
     position: relative;overflow: hidden;background:#00d4ff;color:#0a0e1a;padding:18px;
     border:none;border-radius:14px;font-size:21px;margin:10px 0;width:100%;font-weight:bold;
@@ -76,17 +84,11 @@
   .copy{background:#00ff9d;color:#0a0e1a;padding:22px;font-size:24px}
   .delete-all{background:#ff3b5c;color:white;padding:22px;font-size:24px}
   
-  .day{border-radius:16px;overflow:hidden;margin:12px 0}
+  .day{margin:12px 0;overflow:hidden}
   pre{background:rgba(0,0,0,0.3);padding:14px;border-radius:12px;white-space:pre-wrap;font-size:17px;margin:8px 0}
   .job-item{display:flex;justify-content:space-between;align-items:center;background:rgba(0,212,255,0.1);padding:12px;margin:6px 0;border-radius:12px;font-size:17px;overflow:hidden;border:1px solid rgba(0,212,255,0.2)}
   .delete-x{background:#ff3b5c;color:white;border:none;width:34px;height:34px;border-radius:50%;font-size:18px;font-weight:bold}
   .ot{color:#00ff9d;font-weight:bold;text-shadow:0 0 6px rgba(0,255,157,0.5)}
-
-  /* LIVE MONEY COUNTER */
-  .money-counter{
-    text-align:center;font-size:20px;color:#00ff9d;margin:20px 0;
-    font-family:'Exo 2',sans-serif;font-weight:700;
-  }
 </style>
 </head>
 <body>
@@ -103,9 +105,6 @@
   </div>
 
   <div class="today-date" id="today-date"></div>
-
-  <!-- LIVE $53/HR COUNTER -->
-  <div class="money-counter" id="money-counter">$0.00 earned today</div>
 
   <div class="time-inputs">
     <div class="time-field">
@@ -163,10 +162,11 @@
   let userName = localStorage.getItem('timelatch_name') || '';
   if(userName) document.getElementById('user-name').value = userName;
 
-  const moneyCounter = document.getElementById('money-counter');
-  let startTime = null;
-
   function save(){ localStorage.setItem('timelatch_week', JSON.stringify(week)) }
+  function saveJobs(){ localStorage.setItem('timelatch_jobs', JSON.stringify(customJobs)); renderJobs() }
+  function saveName(){ localStorage.setItem('timelatch_name', document.getElementById('user-name').value.trim() || 'Your') }
+
+  const jobSelect = document.getElementById('job');
   jobSelect.onchange = () => document.getElementById('custom').style.display = jobSelect.value==='other' ? 'block' : 'none';
 
   function renderJobs(){
@@ -175,25 +175,10 @@
     ).join('');
     document.getElementById('saved-jobs').innerHTML = html || '<div style="color:#666;padding:16px;text-align:center">No custom locations yet</div>';
     while(jobSelect.options.length > 4) jobSelect.remove(4);
-    customJobs.forEach(j => jobSelect.add(new Option(j,j), jobSelect.options[jobSelect.options.length-1]));
+    customJobs.forEach(j => jobSelect.add(new Option saw(j,j), jobSelect.options[jobSelect.options.length-1]));
   }
 
   function timeToMins(t){ const [h,m]=t.split(':').map(Number); return h*60+m; }
-
-  function updateMoney(){
-    if(!week[today] || week[today].length === 0) {
-      moneyCounter.innerText = '$0.00 earned today';
-      return;
-    }
-    let totalMins = 0;
-    week[today].forEach(e => {
-      const [s,f] = e.times.split(' – ');
-      totalMins += timeToMins(f) - timeToMins(s);
-    });
-    const hours = totalMins / 60;
-    const money = (hours * 53).toFixed(2);
-    moneyCounter.innerText = `$${money} earned today`;
-  }
 
   function addDay(){
     saveName();
@@ -241,7 +226,7 @@
     const entry = {times: start+' – '+finish, paid, ot: ot.toFixed(2), notes, job};
     if(!week[today]) week[today] = [];
     week[today].push(entry);
-    save(); render(); updateMoney();
+    save(); render();
 
     if ('vibrate' in navigator) { navigator.vibrate(100); }
 
@@ -265,7 +250,6 @@
       });
     });
     document.getElementById('output').innerHTML = html || '<div style="text-align:center;padding:50px;color:#666">No entries yet</div>';
-    updateMoney();
   }
 
   function copyAll(){
@@ -276,4 +260,21 @@
       const dayName = new Date(date+'T12:00:00').toLocaleDateString('en-AU',{...melb,weekday:'long',day:'numeric',month:'short'});
       week[date].forEach(e => {
         const otTag = e.ot > 0 ? ` (OT: ${e.ot} hrs)` : '';
-        text += `${dayName} | ${e.job}\n${e.times}   ${e.paid} hrs${otTag}\n
+        text += `${dayName} | ${e.job}\n${e.times}   ${e.paid} hrs${otTag}\n${e.notes}\n\n`;
+      });
+    });
+    navigator.clipboard.writeText(text);
+    alert('COPIED! Paste into email');
+  }
+
+  function deleteAll(){
+    if(confirm('DELETE EVERYTHING?')){
+      week = {}; save(); render(); alert('ALL GONE');
+    }
+  }
+
+  render();
+  renderJobs();
+</script>
+</body>
+</html>
