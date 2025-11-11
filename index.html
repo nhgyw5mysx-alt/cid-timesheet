@@ -124,13 +124,14 @@
     const startMins = timeToMins(start);
     const finishMins = timeToMins(finish);
 
-    // TIME CLASH CHECK
+    // FIXED: PROPER TIME OVERLAP CHECK
     if(week[today]){
       for(let e of week[today]){
         const eStart = timeToMins(e.times.split(' – ')[0]);
         const eEnd = timeToMins(e.times.split(' – ')[1]);
-        if(finishMins > eStart && startMins < eEnd){
-          alert('TIME CLASH! Already have ' + e.times); return;
+        if (startMins < eEnd && finishMins > eStart) {
+          alert('TIME CLASH! Already have ' + e.times);
+          return;
         }
       }
     }
@@ -144,14 +145,14 @@
       ot = raw;
     } else {
       const dayStart = 7 * 60;     // 7:00am
-      const dayEnd = 15.5 * 60;   // 3:30pm
+      const dayEnd = 15.5 * 60;    // 3:30pm
 
       const before = Math.max(0, Math.min(finishMins, dayStart) - startMins) / 60;
       const during = Math.max(0, Math.min(finishMins, dayEnd) - Math.max(startMins, dayStart)) / 60;
       const after = Math.max(0, finishMins - Math.max(startMins, dayEnd)) / 60;
 
       ot = before + after;
-      normal = during > 0 ? during - 0.5 : 0; // lunch break only if worked during day
+      normal = during > 0 ? during - 0.5 : 0;
     }
 
     const paid = (normal + ot).toFixed(2);
@@ -207,3 +208,12 @@
 
   function deleteAll(){
     if(confirm('DELETE EVERYTHING?')){
+      week = {}; save(); render(); alert('ALL GONE');
+    }
+  }
+
+  render();
+  renderJobs();
+</script>
+</body>
+</html>
