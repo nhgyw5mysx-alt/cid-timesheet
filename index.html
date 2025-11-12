@@ -140,7 +140,7 @@
       letter-spacing: -0.5px;
     }
 
-    /* JOB LOCATION – INPUT INSIDE SELECT */
+    /* JOB LOCATION – FULL LIST ALWAYS VISIBLE */
     .job-location-wrapper {
       position: relative;
     }
@@ -157,8 +157,8 @@
       -webkit-appearance: none;
     }
     #job.custom-input {
-      color: #aaa;
-      font-style: italic;
+      color: white;
+      font-style: normal;
     }
     #job.custom-input::placeholder {
       color: #aaa;
@@ -225,28 +225,6 @@
       box-shadow: 0 8px 24px rgba(0,212,255,0.4);
     }
     .delete-all { background: #ff3b5c; color: white; padding: 24px; font-size: 26px; }
-
-    .job-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: rgba(0,212,255,0.1);
-      padding: 14px;
-      margin: 8px 0;
-      border-radius: 16px;
-      font-size: 17px;
-      border: 1px solid rgba(0,212,255,0.2);
-    }
-    .delete-x {
-      background: #ff3b5c;
-      color: white;
-      border: none;
-      width: 36px;
-      height: 36px;
-      border-radius: 50%;
-      font-size: 18px;
-      font-weight: bold;
-    }
 
     /* PDF TEMPLATE */
     #pdf-template {
@@ -336,7 +314,7 @@
       </div>
     </div>
 
-    <!-- JOB LOCATION – INPUT INSIDE DROPDOWN -->
+    <!-- JOB LOCATION – FULL LIST + ENTER TO ADD -->
     <div class="section">
       <div class="section-title">Job Location</div>
       <div class="job-location-wrapper">
@@ -347,12 +325,6 @@
           <option value="other">+ Add Custom Location</option>
         </select>
       </div>
-    </div>
-
-    <!-- SAVED LOCATIONS -->
-    <div class="section">
-      <div class="section-title">Saved Locations</div>
-      <div id="saved-jobs"></div>
     </div>
 
     <div class="section">
@@ -457,36 +429,67 @@
     }
 
     const jobSelect = document.getElementById('job');
+    const wrapper = document.querySelector('.job-location-wrapper');
 
-    // Convert select to input when "other" is selected
+    // Convert to input on "other"
     jobSelect.addEventListener('change', function () {
       if (this.value === 'other') {
-        this.outerHTML = `<input type="text" id="job" class="custom-input" placeholder="Type new location..." autocomplete="off" style="width:100%;padding:18px;background:rgba(255,255,255,0.08);border:1px solid rgba(0,212,255,0.25);border-radius:20px;color:white;font-size:18px;margin:12px 0;">`;
-        document.getElementById('job').focus();
+        wrapper.innerHTML = `<input type="text" id="job" class="custom-input" placeholder="Type new location..." autocomplete="off">`;
+        const input = document.getElementById('job');
+        input.focus();
+
+        // Press Enter to add
+        input.addEventListener('keydown', function(e) {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            const val = this.value.trim();
+            if (!val) return;
+            if (!customJobs.includes(val)) {
+              customJobs.unshift(val);
+              saveJobs();
+            }
+            restoreSelect(val);
+          }
+        });
+
+        // Click outside → cancel
+        setTimeout(() => {
+          document.addEventListener('click', handleOutsideClick);
+        }, 0);
       }
     });
 
-    // Render main dropdown + saved list
+    function handleOutsideClick(e) {
+      if (!wrapper.contains(e.target)) {
+        restoreSelect();
+        document.removeEventListener('click', handleOutsideClick);
+      }
+    }
+
+    function restoreSelect(selected = null) {
+      wrapper.innerHTML = `<select id="job">
+        <option value="CSL Broadmeadows">CSL Broadmeadows</option>
+        <option value="CSL Tullamarine">CSL Tullamarine</option>
+        <option value="CSL Melbourne">CSL Melbourne</option>
+        <option value="other">+ Add Custom Location</option>
+      </select>`;
+      renderJobs();
+      const newSelect = document.getElementById('job');
+      if (selected) newSelect.value = selected;
+      newSelect.dispatchEvent(new Event('change'));
+    }
+
+    // Render full list
     function renderJobs() {
       const select = document.getElementById('job');
-      if (select.tagName === 'SELECT') {
+      if (select && select.tagName === 'SELECT') {
         while (select.options.length > 4) select.remove(4);
         customJobs.forEach(job => {
           const opt = new Option(job, job);
           select.add(opt, select.options[select.options.length - 1]);
         });
       }
-
-      let html = customJobs.map((j, i) =>
-        `<div class="job-item"><span>${j}</span><button class="delete-x" onclick="removeJob(${i})">X</button></div>`
-      ).join('');
-      document.getElementById('saved-jobs').innerHTML = html || '<div style="color:#666;padding:20px;text-align:center;font-size:17px">No custom locations yet</div>';
     }
-
-    window.removeJob = (i) => {
-      customJobs.splice(i, 1);
-      saveJobs();
-    };
 
     function timeToMins(t) { const [h, m] = t.split(':').map(Number); return h * 60 + m; }
 
@@ -495,7 +498,6 @@
       let jobElement = document.getElementById('job');
       let job = jobElement.value.trim();
 
-      // Handle custom location
       if (jobElement.tagName === 'INPUT') {
         if (!job) { alert('Type a location!'); return; }
         if (!customJobs.includes(job)) {
@@ -545,17 +547,9 @@
 
       if ('vibrate' in navigator) { navigator.vibrate([100, 50, 100]); }
 
-      // Reset to select
       document.getElementById('notes').value = '';
-      const wrapper = document.querySelector('.job-location-wrapper');
-      wrapper.innerHTML = `<select id="job">
-        <option value="CSL Broadmeadows">CSL Broadmeadows</option>
-        <option value="CSL Tullamarine">CSL Tullamarine</option>
-        <option value="CSL Melbourne">CSL Melbourne</option>
-        <option value="other">+ Add Custom Location</option>
-      </select>`;
-      renderJobs();
-      alert('ENTRY ADDED! Location saved.');
+      restoreSelect(job);
+      alert('ENTRY ADDED!');
     });
 
     function render() {
