@@ -174,7 +174,7 @@
       white-space: pre-wrap;
       font-size: 17px;
       margin: 10px 0;
-      line-height: 1.6;
+      line see: 1.6;
       max-height: 180px;
       overflow-y: auto;
     }
@@ -311,7 +311,7 @@
       </div>
     </div>
 
-    <!-- JOB LOCATION – CUSTOMS ADDED ON ENTRY -->
+    <!-- JOB LOCATION – CUSTOMS IN MAIN DROPDOWN -->
     <div class="section">
       <div class="section-title">Job Location</div>
       <select id="job">
@@ -320,7 +320,8 @@
         <option value="CSL Melbourne">CSL Melbourne</option>
         <option value="other">+ Add Custom Location</option>
       </select>
-      <input type="text" id="custom" placeholder="Type new location…" style="display:none;margin-top:12px">
+      <!-- NO WHITE BOX – INPUT HIDDEN -->
+      <input type="text" id="custom" placeholder="Type new location…" style="display:none;">
     </div>
 
     <!-- SAVED LOCATIONS -->
@@ -433,10 +434,11 @@
     const jobSelect = document.getElementById('job');
     const customInput = document.getElementById('custom');
 
-    // Show custom input
+    // Show input only when "other" selected
     jobSelect.onchange = () => {
-      customInput.style.display = jobSelect.value === 'other' ? 'block' : 'none';
-      if (jobSelect.value !== 'other') customInput.value = '';
+      const isOther = jobSelect.value === 'other';
+      customInput.style.display = isOther ? 'block' : 'none';
+      if (!isOther) customInput.value = '';
     };
 
     // Render main dropdown + saved list
@@ -469,7 +471,10 @@
       // Handle custom location
       if (job === 'other') {
         job = customInput.value.trim();
-        if (!job) { alert('Type a location!'); return; }
+        if (!job) { 
+          alert('Type a location!'); 
+          return; 
+        }
         if (!customJobs.includes(job)) {
           customJobs.unshift(job);
           saveJobs();
