@@ -223,7 +223,7 @@
       font-weight: bold;
     }
 
-    /* PDF TEMPLATE – HIDDEN UNTIL EXPORT */
+    /* PDF TEMPLATE */
     #pdf-template {
       position: absolute;
       left: -9999px;
@@ -311,17 +311,20 @@
       </div>
     </div>
 
+    <!-- JOB LOCATION – CUSTOMS NOW IN MAIN LIST -->
     <div class="section">
       <div class="section-title">Job Location</div>
       <select id="job">
         <option value="CSL Broadmeadows">CSL Broadmeadows</option>
         <option value="CSL Tullamarine">CSL Tullamarine</option>
         <option value="CSL Melbourne">CSL Melbourne</option>
-        <option value="other">+ Add Custom Location</option>
+        <!-- CUSTOM LOCATIONS WILL BE ADDED HERE -->
       </select>
       <input type="text" id="custom" placeholder="Type new location…" style="display:none;margin-top:12px">
+      <button id="add-location-btn" style="display:none;margin-top:12px;background:#00ff9d;color:#000;">+ Add to List</button>
     </div>
 
+    <!-- SAVED LOCATIONS – NOW JUST SHOWS LIST -->
     <div class="section">
       <div class="section-title">Saved Locations</div>
       <div id="saved-jobs"></div>
@@ -338,7 +341,6 @@
       <div id="output"></div>
     </div>
 
-    <!-- EXPORT PDF BUTTON -->
     <button class="export-pdf" onclick="exportPDF()">Export PDF Timesheet</button>
     <button class="delete-all" onclick="deleteAll()">DELETE ALL ENTRIES</button>
 
@@ -367,7 +369,7 @@
   </div>
 
   <script>
-    // PARTICLES (unchanged)
+    // PARTICLES
     const canvas = document.getElementById('particles');
     const ctx = canvas.getContext('2d');
     canvas.width = window.innerWidth;
@@ -420,25 +422,64 @@
     let customJobs = JSON.parse(localStorage.getItem('timelatch_jobs') || '[]');
 
     function save() { localStorage.setItem('timelatch_week', JSON.stringify(week)); }
-    function saveJobs() { localStorage.setItem('timelatch_jobs', JSON.stringify(customJobs)); renderJobs(); }
+    function saveJobs() { 
+      localStorage.setItem('timelatch_jobs', JSON.stringify(customJobs)); 
+      renderJobs();
+    }
     function saveName() {
       const name = document.getElementById('user-name').value.trim();
       if (name) localStorage.setItem('timelatch_name', name);
     }
 
     const jobSelect = document.getElementById('job');
+    const customInput = document.getElementById('custom');
+    const addLocationBtn = document.getElementById('add-location-btn');
+
+    // Show custom input + add button
     jobSelect.onchange = () => {
-      document.getElementById('custom').style.display = jobSelect.value === 'other' ? 'block' : 'none';
+      const isOther = jobSelect.value === 'other';
+      customInput.style.display = isOther ? 'block' : 'none';
+      addLocationBtn.style.display = isOther ? 'block' : 'none';
     };
 
+    // Add custom location to main list
+    addLocationBtn.onclick = () => {
+      const newJob = customInput.value.trim();
+      if (!newJob) { alert('Type a location!'); return; }
+      if (customJobs.includes(newJob)) { alert('Already added!'); return; }
+
+      customJobs.unshift(newJob);
+      saveJobs();
+
+      // Switch back to new location
+      jobSelect.value = newJob;
+      customInput.value = '';
+      customInput.style.display = 'none';
+      addLocationBtn.style.display = 'none';
+
+      alert(`"${newJob}" added to list!`);
+    };
+
+    // Render saved + main dropdown
     function renderJobs() {
+      // Update main dropdown
+      while (jobSelect.options.length > 3) jobSelect.remove(3); // Keep CSL + other
+      customJobs.forEach(job => {
+        const opt = new Option(job, job);
+        jobSelect.add(opt, jobSelect.options[jobSelect.options.length - 1]);
+      });
+
+      // Update saved list
       let html = customJobs.map((j, i) =>
-        `<div class="job-item"><span>${j}</span><button class="delete-x" onclick="customJobs.splice(${i},1);saveJobs()">X</button></div>`
+        `<div class="job-item"><span>${j}</span><button class="delete-x" onclick="removeJob(${i})">X</button></div>`
       ).join('');
       document.getElementById('saved-jobs').innerHTML = html || '<div style="color:#666;padding:20px;text-align:center;font-size:17px">No custom locations yet</div>';
-      while (jobSelect.options.length > 4) jobSelect.remove(4);
-      customJobs.forEach(j => jobSelect.add(new Option(j, j), jobSelect.options[jobSelect.options.length - 1]));
     }
+
+    window.removeJob = (i) => {
+      customJobs.splice(i, 1);
+      saveJobs();
+    };
 
     function timeToMins(t) { const [h, m] = t.split(':').map(Number); return h * 60 + m; }
 
@@ -446,9 +487,12 @@
       saveName();
       let job = jobSelect.value;
       if (job === 'other') {
-        job = document.getElementById('custom').value.trim();
+        job = customInput.value.trim();
         if (!job) { alert('Type a location!'); return; }
-        if (!customJobs.includes(job)) { customJobs.unshift(job); saveJobs(); }
+        if (!customJobs.includes(job)) {
+          customJobs.unshift(job);
+          saveJobs();
+        }
       }
       const notes = document.getElementById('notes').value.trim();
       if (!notes) { alert('Add notes!'); return; }
@@ -492,9 +536,10 @@
       if ('vibrate' in navigator) { navigator.vibrate([100, 50, 100]); }
 
       document.getElementById('notes').value = '';
-      jobSelect.value = 'CSL Broadmeadows';
-      document.getElementById('custom').style.display = 'none';
-      document.getElementById('custom').value = '';
+      jobSelect.value = job;
+      customInput.style.display = 'none';
+      addLocationBtn.style.display = 'none';
+      customInput.value = '';
       alert('ENTRY ADDED!');
     });
 
