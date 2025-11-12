@@ -311,20 +311,19 @@
       </div>
     </div>
 
-    <!-- JOB LOCATION – CUSTOMS NOW IN MAIN LIST -->
+    <!-- JOB LOCATION – CUSTOMS ADDED ON ENTRY -->
     <div class="section">
       <div class="section-title">Job Location</div>
       <select id="job">
         <option value="CSL Broadmeadows">CSL Broadmeadows</option>
         <option value="CSL Tullamarine">CSL Tullamarine</option>
         <option value="CSL Melbourne">CSL Melbourne</option>
-        <!-- CUSTOM LOCATIONS WILL BE ADDED HERE -->
+        <option value="other">+ Add Custom Location</option>
       </select>
       <input type="text" id="custom" placeholder="Type new location…" style="display:none;margin-top:12px">
-      <button id="add-location-btn" style="display:none;margin-top:12px;background:#00ff9d;color:#000;">+ Add to List</button>
     </div>
 
-    <!-- SAVED LOCATIONS – NOW JUST SHOWS LIST -->
+    <!-- SAVED LOCATIONS -->
     <div class="section">
       <div class="section-title">Saved Locations</div>
       <div id="saved-jobs"></div>
@@ -433,43 +432,23 @@
 
     const jobSelect = document.getElementById('job');
     const customInput = document.getElementById('custom');
-    const addLocationBtn = document.getElementById('add-location-btn');
 
-    // Show custom input + add button
+    // Show custom input
     jobSelect.onchange = () => {
-      const isOther = jobSelect.value === 'other';
-      customInput.style.display = isOther ? 'block' : 'none';
-      addLocationBtn.style.display = isOther ? 'block' : 'none';
+      customInput.style.display = jobSelect.value === 'other' ? 'block' : 'none';
+      if (jobSelect.value !== 'other') customInput.value = '';
     };
 
-    // Add custom location to main list
-    addLocationBtn.onclick = () => {
-      const newJob = customInput.value.trim();
-      if (!newJob) { alert('Type a location!'); return; }
-      if (customJobs.includes(newJob)) { alert('Already added!'); return; }
-
-      customJobs.unshift(newJob);
-      saveJobs();
-
-      // Switch back to new location
-      jobSelect.value = newJob;
-      customInput.value = '';
-      customInput.style.display = 'none';
-      addLocationBtn.style.display = 'none';
-
-      alert(`"${newJob}" added to list!`);
-    };
-
-    // Render saved + main dropdown
+    // Render main dropdown + saved list
     function renderJobs() {
-      // Update main dropdown
-      while (jobSelect.options.length > 3) jobSelect.remove(3); // Keep CSL + other
+      // Clear custom options
+      while (jobSelect.options.length > 4) jobSelect.remove(4);
       customJobs.forEach(job => {
         const opt = new Option(job, job);
         jobSelect.add(opt, jobSelect.options[jobSelect.options.length - 1]);
       });
 
-      // Update saved list
+      // Saved list
       let html = customJobs.map((j, i) =>
         `<div class="job-item"><span>${j}</span><button class="delete-x" onclick="removeJob(${i})">X</button></div>`
       ).join('');
@@ -486,6 +465,8 @@
     document.getElementById('add-btn').addEventListener('click', function () {
       saveName();
       let job = jobSelect.value;
+
+      // Handle custom location
       if (job === 'other') {
         job = customInput.value.trim();
         if (!job) { alert('Type a location!'); return; }
@@ -494,6 +475,7 @@
           saveJobs();
         }
       }
+
       const notes = document.getElementById('notes').value.trim();
       if (!notes) { alert('Add notes!'); return; }
 
@@ -535,12 +517,12 @@
 
       if ('vibrate' in navigator) { navigator.vibrate([100, 50, 100]); }
 
+      // Reset form
       document.getElementById('notes').value = '';
       jobSelect.value = job;
       customInput.style.display = 'none';
-      addLocationBtn.style.display = 'none';
       customInput.value = '';
-      alert('ENTRY ADDED!');
+      alert('ENTRY ADDED! Location saved.');
     });
 
     function render() {
