@@ -140,7 +140,6 @@
       letter-spacing: -0.5px;
     }
 
-    /* JOB LOCATION – FULL LIST ALWAYS VISIBLE */
     .job-location-wrapper {
       position: relative;
     }
@@ -428,45 +427,43 @@
       if (name) localStorage.setItem('timelatch_name', name);
     }
 
-    const jobSelect = document.getElementById('job');
     const wrapper = document.querySelector('.job-location-wrapper');
 
-    // Convert to input on "other"
-    jobSelect.addEventListener('change', function () {
-      if (this.value === 'other') {
+    // Convert to input when "other" is selected
+    wrapper.addEventListener('change', function(e) {
+      if (e.target.value === 'other') {
         wrapper.innerHTML = `<input type="text" id="job" class="custom-input" placeholder="Type new location..." autocomplete="off">`;
         const input = document.getElementById('job');
         input.focus();
 
-        // Press Enter to add
-        input.addEventListener('keydown', function(e) {
+        // Press Enter → save & restore
+        const handleEnter = (e) => {
           if (e.key === 'Enter') {
             e.preventDefault();
-            const val = this.value.trim();
-            if (!val) return;
-            if (!customJobs.includes(val)) {
+            const val = input.value.trim();
+            if (val && !customJobs.includes(val)) {
               customJobs.unshift(val);
               saveJobs();
             }
-            restoreSelect(val);
+            restoreSelect(val || '');
+            input.removeEventListener('keydown', handleEnter);
           }
-        });
+        };
+        input.addEventListener('keydown', handleEnter);
 
         // Click outside → cancel
-        setTimeout(() => {
-          document.addEventListener('click', handleOutsideClick);
-        }, 0);
+        const handleClickOutside = (e) => {
+          if (!wrapper.contains(e.target)) {
+            restoreSelect();
+            input.removeEventListener('keydown', handleEnter);
+            document.removeEventListener('click', handleClickOutside);
+          }
+        };
+        setTimeout(() => document.addEventListener('click', handleClickOutside), 0);
       }
     });
 
-    function handleOutsideClick(e) {
-      if (!wrapper.contains(e.target)) {
-        restoreSelect();
-        document.removeEventListener('click', handleOutsideClick);
-      }
-    }
-
-    function restoreSelect(selected = null) {
+    function restoreSelect(selected = '') {
       wrapper.innerHTML = `<select id="job">
         <option value="CSL Broadmeadows">CSL Broadmeadows</option>
         <option value="CSL Tullamarine">CSL Tullamarine</option>
@@ -474,12 +471,10 @@
         <option value="other">+ Add Custom Location</option>
       </select>`;
       renderJobs();
-      const newSelect = document.getElementById('job');
-      if (selected) newSelect.value = selected;
-      newSelect.dispatchEvent(new Event('change'));
+      const select = document.getElementById('job');
+      if (selected) select.value = selected;
     }
 
-    // Render full list
     function renderJobs() {
       const select = document.getElementById('job');
       if (select && select.tagName === 'SELECT') {
@@ -495,11 +490,11 @@
 
     document.getElementById('add-btn').addEventListener('click', function () {
       saveName();
-      let jobElement = document.getElementById('job');
+      const jobElement = document.getElementById('job');
       let job = jobElement.value.trim();
 
-      if (jobElement.tagName === 'INPUT') {
-        if (!job) { alert('Type a location!'); return; }
+      // If in input mode, auto-save
+      if (jobElement.tagName === 'INPUT' && job) {
         if (!customJobs.includes(job)) {
           customJobs.unshift(job);
           saveJobs();
