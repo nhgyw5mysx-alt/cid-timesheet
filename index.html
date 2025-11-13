@@ -15,7 +15,7 @@
     * { box-sizing: border-box; margin: 0; padding: 0; }
     
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe  UI', Arial, sans-serif;
       background: #0a0e1a;
       color: white;
       min-height: 100vh;
@@ -102,13 +102,13 @@
 
     .time-inputs {
       display: flex;
-      gap: 18px;
+      gap: 12px;
       margin: 20px 0;
       justify-content: center;
     }
     .time-field {
       flex: 1;
-      max-width: 135px;
+      max-width: 115px;
       text-align: center;
     }
     .time-field > div {
@@ -128,7 +128,7 @@
       align-items: center;
       justify-content: center;
     }
-    .time-box input {
+    .time-box input, .time-box select {
       background: transparent;
       border: none;
       color: white;
@@ -138,6 +138,8 @@
       width: 100%;
       outline: none;
       letter-spacing: -0.5px;
+      -webkit-appearance: none;
+      appearance: none;
     }
 
     .job-location-wrapper {
@@ -303,6 +305,10 @@
     <div class="section">
       <div class="time-inputs">
         <div class="time-field">
+          <div>DAY</div>
+          <div class="time-box"><input type="date" id="entry-date"></div>
+        </div>
+        <div class="time-field">
           <div>START</div>
           <div class="time-box"><input type="time" id="start-time" value="07:00"></div>
         </div>
@@ -327,9 +333,9 @@
     </div>
 
     <div class="section">
-      <div class="section-title">Today's Notes</div>
+      <div class="section-title">Notes</div>
       <textarea id="notes" placeholder="Type everything here…"></textarea>
-      <button id="add-btn">ADD TODAY'S ENTRY</button>
+      <button id="add-btn">ADD ENTRY</button>
     </div>
 
     <div class="section">
@@ -406,7 +412,10 @@
     document.getElementById('today-date').innerText = now.toLocaleDateString('en-AU', {
       ...melb, weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
     });
-    const today = now.toLocaleDateString('en-CA', melb);
+
+    // Set default date to today
+    const entryDateInput = document.getElementById('entry-date');
+    entryDateInput.value = now.toISOString().split('T')[0];
 
     const lastMonday = new Date(now);
     lastMonday.setDate(now.getDate() - ((now.getDay() + 6) % 7));
@@ -436,7 +445,6 @@
         const input = document.getElementById('job');
         input.focus();
 
-        // Press Enter → save & restore
         const handleEnter = (e) => {
           if (e.key === 'Enter') {
             e.preventDefault();
@@ -451,7 +459,6 @@
         };
         input.addEventListener('keydown', handleEnter);
 
-        // Click outside → cancel
         const handleClickOutside = (e) => {
           if (!wrapper.contains(e.target)) {
             restoreSelect();
@@ -493,7 +500,7 @@
       const jobElement = document.getElementById('job');
       let job = jobElement.value.trim();
 
-      // If in input mode, auto-save
+      // Auto-save custom location
       if (jobElement.tagName === 'INPUT' && job) {
         if (!customJobs.includes(job)) {
           customJobs.unshift(job);
@@ -504,23 +511,27 @@
       const notes = document.getElementById('notes').value.trim();
       if (!notes) { alert('Add notes!'); return; }
 
+      const entryDate = document.getElementById('entry-date').value;
+      if (!entryDate) { alert('Select a date!'); return; }
+
       const start = document.getElementById('start-time').value || "07:00";
       const finish = document.getElementById('finish-time').value || "15:30";
       const startMins = timeToMins(start);
       const finishMins = timeToMins(finish);
 
-      if (week[today]) {
-        for (let e of week[today]) {
+      // Check for time clash on selected day
+      if (week[entryDate]) {
+        for (let e of week[entryDate]) {
           const eStart = timeToMins(e.times.split(' – ')[0]);
           const eEnd = timeToMins(e.times.split(' – ')[1]);
           if (startMins < eEnd && finishMins > eStart) {
-            alert('TIME CLASH! Already have ' + e.times); return;
+            alert('TIME CLASH! Already have ' + e.times + ' on ' + entryDate); return;
           }
         }
       }
 
       const raw = (finishMins - startMins) / 60;
-      const isSat = now.getDay() === 6;
+      const isSat = new Date(entryDate).getDay() === 6;
       let normal = 0, ot = 0;
       if (isSat) {
         ot = raw;
@@ -536,15 +547,15 @@
 
       const paid = (normal + ot).toFixed(2);
       const entry = { times: start + ' – ' + finish, paid, ot: ot.toFixed(2), notes, job };
-      if (!week[today]) week[today] = [];
-      week[today].push(entry);
+      if (!week[entryDate]) week[entryDate] = [];
+      week[entryDate].push(entry);
       save(); render();
 
       if ('vibrate' in navigator) { navigator.vibrate([100, 50, 100]); }
 
       document.getElementById('notes').value = '';
       restoreSelect(job);
-      alert('ENTRY ADDED!');
+      alert('ENTRY ADDED FOR ' + entryDate + '!');
     });
 
     function render() {
