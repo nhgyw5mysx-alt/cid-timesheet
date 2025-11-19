@@ -6,288 +6,48 @@
   <title>TimeLatch</title>
 
   <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@600;700&display=swap" rel="stylesheet">
-
-  <!-- jsPDF + html2canvas -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe  UI', Arial, sans-serif;
-      background: #0a0e1a;
-      color: white;
-      min-height: 100vh;
-      overflow-x: hidden;
-      position: relative;
-      padding: 20px 16px;
-    }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; background: #0a0e1a; color: white; min-height: 100vh; padding: 20px 16px; position: relative; overflow-x: hidden; }
+    canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+    .app { max-width: 500px; margin: 0 auto; position: relative; z-index: 1; }
 
-    canvas {
-      position: fixed;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      z-index: 0;
-      pointer-events: none;
-    }
+    .header { text-align: center; margin-bottom: 32px; }
+    .logo-img { width: 90px; border-radius: 18px; box-shadow: 0 0 28px rgba(0,212,255,0.5); animation: pulse 3s infinite ease-in-out; }
+    @keyframes pulse { 0%,100%{box-shadow:0 0 20px rgba(0,212,255,0.4)} 50%{box-shadow:0 0 38px rgba(0,212,255,0.7)} }
+    h1 { font-family: 'Exo 2', sans-serif; font-size: 40px; font-weight: 700; background: linear-gradient(90deg,#00d4ff,#00aaff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-top: 12px; }
 
-    .app {
-      max-width: 500px;
-      margin: 0 auto;
-      position: relative;
-      z-index: 1;
-    }
+    .today-date { font-family: 'Exo 2', sans-serif; font-size: 28px; color: #00d4ff; text-align: center; margin: 24px 0 32px; text-shadow: 0 0 10px rgba(0,212,255,0.4); }
 
-    .header {
-      text-align: center;
-      margin-bottom: 32px;
-    }
-    .logo-img {
-      width: 90px;
-      height: auto;
-      border-radius: 18px;
-      margin: 8px auto;
-      box-shadow: 0 0 28px rgba(0,212,255,0.5);
-      animation: pulse 3s infinite ease-in-out;
-    }
-    @keyframes pulse {
-      0%, 100% { box-shadow: 0 0 20px rgba(0,212,255,0.4); }
-      50% { box-shadow: 0 0 38px rgba(0,212,255,0.7); }
-    }
-    h1 {
-      font-family: 'Exo 2', sans-serif;
-      font-size: 40px;
-      font-weight: 700;
-      background: linear-gradient(90deg, #00d4ff, #00aaff);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      margin-top: 12px;
-      text-shadow: 0 0 12px rgba(0,212,255,0.3);
-    }
+    .section { margin-bottom: 28px; padding: 0 8px; }
+    .section-title { font-size: 26px; color: #00d4ff; text-align: center; margin: 16px 0 20px; font-weight: 700; }
 
-    .today-date {
-      font-family: 'Exo 2', sans-serif;
-      font-size: 28px;
-      font-weight: 700;
-      color: #00d4ff;
-      text-align: center;
-      margin: 24px 0 32px;
-      text-shadow: 0 0 10px rgba(0,212,255,0.4);
-    }
+    input, textarea, select { width: 100%; padding: 18px; background: rgba(255,255,255,0.08); border: 1px solid rgba(0,212,255,0.25); border-radius: 20px; color: white; font-size: 18px; margin: 12px 0; }
+    textarea { height: 160px; resize: none; }
 
-    .section {
-      margin-bottom: 28px;
-      padding: 0 8px;
-    }
+    .time-inputs { display: flex; gap: 12px; margin: 20px 0; justify-content: center; }
+    .time-field { flex: 1; max-width: 115px; text-align: center; }
+    .time-field > div { font-size: 17px; color: #00d4ff; margin-bottom: 8px; font-weight: 600; }
+    .time-box { background: rgba(20,26,46,0.7); border: 1px solid rgba(0,212,255,0.3); border-radius: 18px; padding: 10px 4px; height: 56px; display: flex; align-items: center; justify-content: center; }
+    .time-box input { background: transparent; border: none; color: white; font-size: 26px; font-weight: bold; text-align: center; width: 100%; outline: none; }
 
-    .section-title {
-      font-size: 26px;
-      color: #00d4ff;
-      text-align: center;
-      margin: 16px 0 20px;
-      font-weight: 700;
-    }
+    .day { background: rgba(20,26,46,0.9); border-radius: 18px; padding: 18px; margin: 14px 0; border: 1px solid rgba(0,212,255,0.3); position: relative; }
+    .day-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .day-header button { background: #ff3b5c; padding: 8px 14px; border-radius: 12px; font-size: 14px; }
+    pre { background: rgba(0,0,0,0.3); padding: 14px; border-radius: 14px; white-space: pre-wrap; font-size: 17px; margin: 10px 0; line-height: 1.6; }
+    .ot { color: #00ff9d; font-weight: bold; }
 
-    #user-name {
-      width: 100%;
-      padding: 18px;
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid rgba(0,212,255,0.25);
-      border-radius: 20px;
-      color: white;
-      font-size: 18px;
-      text-align: center;
-    }
-
-    .time-inputs {
-      display: flex;
-      gap: 12px;
-      margin: 20px 0;
-      justify-content: center;
-    }
-    .time-field {
-      flex: 1;
-      max-width: 115px;
-      text-align: center;
-    }
-    .time-field > div {
-      font-size: 17px;
-      color: #00d4ff;
-      margin-bottom: 8px;
-      font-weight: 600;
-    }
-    .time-box {
-      background: rgba(20, 26, 46, 0.7);
-      border: 1px solid rgba(0,212,255,0.3);
-      border-radius: 18px;
-      padding: 10px 4px;
-      backdrop-filter: blur(8px);
-      height: 56px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .time-box input, .time-box select {
-      background: transparent;
-      border: none;
-      color: white;
-      font-size: 26px;
-      font-weight: bold;
-      text-align: center;
-      width: 100%;
-      outline: none;
-      letter-spacing: -0.5px;
-      -webkit-appearance: none;
-      appearance: none;
-    }
-
-    .job-location-wrapper {
-      position: relative;
-    }
-    #job {
-      width: 100%;
-      padding: 18px;
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid rgba(0,212,255,0.25);
-      border-radius: 20px;
-      color: white;
-      font-size: 18px;
-      margin: 12px 0;
-      appearance: none;
-      -webkit-appearance: none;
-    }
-    #job.custom-input {
-      color: white;
-      font-style: normal;
-    }
-    #job.custom-input::placeholder {
-      color: #aaa;
-    }
-
-    textarea, #output {
-      width: 100%;
-      padding: 18px;
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid rgba(0,212,255,0.25);
-      border-radius: 20px;
-      color: white;
-      font-size: 18px;
-      margin: 12px 0;
-    }
-    textarea {
-      height: 160px;
-      resize: none;
-    }
-
-    .day {
-      background: rgba(20, 26, 46, 0.85);
-      border-radius: 18px;
-      padding: 18px;
-      margin: 14px 0;
-      border: 1px solid rgba(0,212,255,0.2);
-    }
-    pre {
-      background: rgba(0,0,0,0.3);
-      padding: 14px;
-      border-radius: 14px;
-      white-space: pre-wrap;
-      font-size: 17px;
-      margin: 10px 0;
-      line-height: 1.6;
-      max-height: 180px;
-      overflow-y: auto;
-    }
-    .ot { color: #00ff9d; font-weight: bold; text-shadow: 0 0 6px rgba(0,255,157,0.5); }
-
-    button {
-      width: 100%;
-      padding: 20px;
-      background: #00d4ff;
-      color: #0a0e1a;
-      border: none;
-      border-radius: 22px;
-      font-size: 22px;
-      font-weight: bold;
-      margin: 16px 0;
-      cursor: pointer;
-      box-shadow: 0 6px 16px rgba(0,212,255,0.3);
-      transition: 0.3s;
-    }
-    button:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 10px 24px rgba(0,212,255,0.4);
-    }
-    .export-pdf { 
-      background: linear-gradient(135deg, #00ff9d, #00d4ff); 
-      padding: 24px; 
-      font-size: 26px; 
-      border-radius: 30px;
-      box-shadow: 0 8px 24px rgba(0,212,255,0.4);
-    }
+    button { width: 100%; padding: 20px; background: #00d4ff; color: #0a0e1a; border: none; border-radius: 22px; font-size: 22px; font-weight: bold; margin: 16px 0; cursor: pointer; box-shadow: 0 6px 16px rgba(0,212,255,0.3); }
+    button:hover { transform: translateY(-2px); }
+    .export-pdf { background: linear-gradient(135deg,#00ff9d,#00d4ff); padding: 24px; font-size: 26px; border-radius: 30px; }
     .delete-all { background: #ff3b5c; color: white; padding: 24px; font-size: 26px; }
-
-    /* PDF TEMPLATE */
-    #pdf-template {
-      position: absolute;
-      left: -9999px;
-      top: 0;
-      width: 800px;
-      padding: 60px;
-      background: white;
-      color: #000;
-      font-family: 'Helvetica', sans-serif;
-    }
-    #pdf-template .header {
-      text-align: center;
-      margin-bottom: 40px;
-    }
-    #pdf-template .logo {
-      width: 80px;
-      border-radius: 16px;
-      margin-bottom: 16px;
-    }
-    #pdf-template h1 {
-      font-size: 36px;
-      background: linear-gradient(90deg, #00d4ff, #00aaff);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      margin: 0;
-    }
-    #pdf-template .subtitle {
-      font-size: 20px;
-      color: #555;
-      margin-top: 8px;
-    }
-    #pdf-template table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 30px;
-      font-size: 16px;
-    }
-    #pdf-template th, #pdf-template td {
-      border: 1px solid #ddd;
-      padding: 14px;
-      text-align: left;
-    }
-    #pdf-template th {
-      background: linear-gradient(135deg, #00d4ff, #00aaff);
-      color: white;
-      font-weight: bold;
-    }
-    #pdf-template .ot {
-      color: #00aa00;
-      font-weight: bold;
-    }
-    #pdf-template .notes {
-      font-style: italic;
-      color: #444;
-    }
   </style>
 </head>
 <body>
   <canvas id="particles"></canvas>
-
   <div class="app">
 
     <div class="header">
@@ -297,29 +57,16 @@
 
     <div class="today-date" id="today-date"></div>
 
-    <div class="section">
-      <div class="section-title">Your Name</div>
-      <input type="text" id="user-name" placeholder="e.g. Daniel">
-    </div>
+    <div class="section"><div class="section-title">Your Name</div><input type="text" id="user-name" placeholder="e.g. Daniel"></div>
 
     <div class="section">
       <div class="time-inputs">
-        <div class="time-field">
-          <div>DAY</div>
-          <div class="time-box"><input type="date" id="entry-date"></div>
-        </div>
-        <div class="time-field">
-          <div>START</div>
-          <div class="time-box"><input type="time" id="start-time" value="07:00"></div>
-        </div>
-        <div class="time-field">
-          <div>FINISH</div>
-          <div class="time-box"><input type="time" id="finish-time" value="15:30"></div>
-        </div>
+        <div class="time-field"><div>DAY</div><div class="time-box"><input type="date" id="entry-date"></div></div>
+        <div class="time-field"><div>START</div><div class="time-box"><input type="time" id="start-time" value="07:00"></div></div>
+        <div class="time-field"><div>FINISH</div><div class="time-box"><input type="time" id="finish-time" value="15:30"></div></div>
       </div>
     </div>
 
-    <!-- JOB LOCATION – FULL LIST + ENTER TO ADD -->
     <div class="section">
       <div class="section-title">Job Location</div>
       <div class="job-location-wrapper">
@@ -345,274 +92,128 @@
 
     <button class="export-pdf" onclick="exportPDF()">Export PDF Timesheet</button>
     <button class="delete-all" onclick="deleteAll()">DELETE ALL ENTRIES</button>
-
-  </div>
-
-  <!-- HIDDEN PDF TEMPLATE -->
-  <div id="pdf-template">
-    <div class="header">
-      <img src="IMG_2776.jpeg" alt="Logo" class="logo">
-      <h1>TimeLatch</h1>
-      <div class="subtitle" id="pdf-name">Daniel's Timesheet</div>
-      <div class="subtitle" id="pdf-week">Week ending Monday 10 November 2025</div>
-    </div>
-    <table>
-      <thead>
-        <tr>
-          <th>Date</th>
-          <th>Location</th>
-          <th>Time</th>
-          <th>Hours</th>
-          <th>Notes</th>
-        </tr>
-      </thead>
-      <tbody id="pdf-body"></tbody>
-    </table>
   </div>
 
   <script>
-    // PARTICLES
-    const canvas = document.getElementById('particles');
-    const ctx = canvas.getContext('2d');
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-    const particles = [];
-    for (let i = 0; i < 50; i++) {
-      particles.push({
-        x: Math.random() * canvas.width,
-        y: Math.random() * canvas.height,
-        radius: Math.random() * 1.6 + 1,
-        speed: Math.random() * 0.4 + 0.2,
-        angle: Math.random() * Math.PI * 2
-      });
-    }
-    function animate() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      particles.forEach(p => {
-        p.x += Math.cos(p.angle) * p.speed;
-        p.y += Math.sin(p.angle) * p.speed;
-        if (p.x < 0 || p.x > canvas.width) p.angle = Math.PI - p.angle;
-        if (p.y < 0 || p.y > canvas.height) p.angle = -p.angle;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(0, 212, 255, 0.5)';
-        ctx.fill();
-      });
-      requestAnimationFrame(animate);
-    }
-    animate();
-    window.addEventListener('resize', () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    });
+    // Particles
+    const canvas = document.getElementById('particles'); const ctx = canvas.getContext('2d');
+    canvas.width = innerWidth; canvas.height = innerHeight;
+    const particles = Array.from({length:50},()=>({x:Math.random()*canvas.width,y:Math.random()*canvas.height,radius:Math.random()*1.6+1,speed:Math.random()*0.4+0.2,angle:Math.random()*Math.PI*2}));
+    function animate(){ctx.clearRect(0,0,canvas.width,canvas.height);particles.forEach(p=>{p.x+=Math.cos(p.angle)*p.speed;p.y+=Math.sin(p.angle)*p.speed;if(p.x<0||p.x>canvas.width)p.angle=Math.PI-p.angle;if(p.y<0||p.y>canvas.height)p.angle=-p.angle;ctx.beginPath();ctx.arc(p.x,p.y,p.radius,0,Math.PI*2);ctx.fillStyle='rgba(0,212,255,0.5)';ctx.fill()});requestAnimationFrame(animate);}animate();
+    window.addEventListener('resize',()=>{canvas.width=innerWidth;canvas.height=innerHeight});
 
-    // APP LOGIC
-    const now = new Date();
-    const melb = { timeZone: 'Australia/Melbourne' };
-    document.getElementById('today-date').innerText = now.toLocaleDateString('en-AU', {
-      ...melb, weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
-    });
+    const now = new Date(); const melb = {timeZone:'Australia/Melbourne'};
+    document.getElementById('today-date').innerText = now.toLocaleDateString('en-AU',{...melb,weekday:'long',day:'numeric',month:'long',year:'numeric'});
+    document.getElementById('entry-date').value = now.toISOString().split('T')[0];
 
-    // Set default date to today
-    const entryDateInput = document.getElementById('entry-date');
-    entryDateInput.value = now.toISOString().split('T')[0];
-
-    const lastMonday = new Date(now);
-    lastMonday.setDate(now.getDate() - ((now.getDay() + 6) % 7));
-    const weekEnding = lastMonday.toLocaleDateString('en-AU', {
-      ...melb, weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
-    });
-
-    let week = JSON.parse(localStorage.getItem('timelatch_week') || '{}');
-    let customJobs = JSON.parse(localStorage.getItem('timelatch_jobs') || '[]');
-
-    function save() { localStorage.setItem('timelatch_week', JSON.stringify(week)); }
-    function saveJobs() { 
-      localStorage.setItem('timelatch_jobs', JSON.stringify(customJobs)); 
-      renderJobs();
-    }
-    function saveName() {
-      const name = document.getElementById('user-name').value.trim();
-      if (name) localStorage.setItem('timelatch_name', name);
-    }
-
+    let week = JSON.parse(localStorage.getItem('timelatch_week')||'{}');
+    let customJobs = JSON.parse(localStorage.getItem('timelatch_jobs')||'[]');
     const wrapper = document.querySelector('.job-location-wrapper');
 
-    // Convert to input when "other" is selected
-    wrapper.addEventListener('change', function(e) {
-      if (e.target.value === 'other') {
-        wrapper.innerHTML = `<input type="text" id="job" class="custom-input" placeholder="Type new location..." autocomplete="off">`;
-        const input = document.getElementById('job');
-        input.focus();
+    function save(){localStorage.setItem('timelatch_week',JSON.stringify(week))}
+    function saveJobs(){localStorage.setItem('timelatch_jobs',JSON.stringify(customJobs));renderJobs()}
+    function saveName(){const n=document.getElementById('user-name').value.trim();if(n)localStorage.setItem('timelatch_name',n)}
 
-        const handleEnter = (e) => {
-          if (e.key === 'Enter') {
-            e.preventDefault();
-            const val = input.value.trim();
-            if (val && !customJobs.includes(val)) {
-              customJobs.unshift(val);
-              saveJobs();
-            }
-            restoreSelect(val || '');
-            input.removeEventListener('keydown', handleEnter);
-          }
-        };
-        input.addEventListener('keydown', handleEnter);
+    // Custom location handling
+    wrapper.addEventListener('change',e=>{if(e.target.value==='other'){
+      wrapper.innerHTML=`<input type="text" id="job" placeholder="Type new location..." autocomplete="off" style="width:100%;padding:18px;background:rgba(255,255,255,0.08);border:1px solid rgba(0,212,255,0.25);border-radius:20px;color:white;font-size:18px;margin:12px 0;">`;
+      const input=document.getElementById('job');input.focus();
+      const enterHandler=ev=>{if(ev.key==='Enter'){ev.preventDefault();const v=input.value.trim();if(v&&!customJobs.includes(v)){customJobs.unshift(v);saveJobs()}restoreSelect(v||'')}};
+      input.addEventListener('keydown',enterHandler);
+      const clickOutside=ev=>{if(!wrapper.contains(ev.target)){restoreSelect();input.removeEventListener('keydown',enterHandler);document.removeEventListener('click',clickOutside)}};
+      setTimeout(()=>document.addEventListener('click',clickOutside),0);
+    }});
 
-        const handleClickOutside = (e) => {
-          if (!wrapper.contains(e.target)) {
-            restoreSelect();
-            input.removeEventListener('keydown', handleEnter);
-            document.removeEventListener('click', handleClickOutside);
-          }
-        };
-        setTimeout(() => document.addEventListener('click', handleClickOutside), 0);
-      }
-    });
-
-    function restoreSelect(selected = '') {
-      wrapper.innerHTML = `<select id="job">
-        <option value="CSL Broadmeadows">CSL Broadmeadows</option>
-        <option value="CSL Tullamarine">CSL Tullamarine</option>
-        <option value="CSL Melbourne">CSL Melbourne</option>
-        <option value="other">+ Add Custom Location</option>
-      </select>`;
-      renderJobs();
-      const select = document.getElementById('job');
-      if (selected) select.value = selected;
+    function restoreSelect(selected=''){
+      wrapper.innerHTML=`<select id="job"><option value="CSL Broadmeadows">CSL Broadmeadows</option><option value="CSL Tullamarine">CSL Tullamarine</option><option value="CSL Melbourne">CSL Melbourne</option><option value="other">+ Add Custom Location</option></select>`;
+      renderJobs();if(selected)document.getElementById('job').value=selected;
+    }
+    function renderJobs(){
+      const s=document.getElementById('job');
+      if(s&&s.tagName==='SELECT'){while(s.options.length>4)s.remove(4);customJobs.forEach(j=>s.add(new Option(j,j),s.options[s.options.length-1]))}
     }
 
-    function renderJobs() {
-      const select = document.getElementById('job');
-      if (select && select.tagName === 'SELECT') {
-        while (select.options.length > 4) select.remove(4);
-        customJobs.forEach(job => {
-          const opt = new Option(job, job);
-          select.add(opt, select.options[select.options.length - 1]);
-        });
-      }
-    }
+    function timeToMins(t){const[h,m]=t.split(':').map(Number);return h*60+m}
 
-    function timeToMins(t) { const [h, m] = t.split(':').map(Number); return h * 60 + m; }
-
-    document.getElementById('add-btn').addEventListener('click', function () {
+    // ADD NEW ENTRY
+    document.getElementById('add-btn').onclick=()=>{
       saveName();
-      const jobElement = document.getElementById('job');
-      let job = jobElement.value.trim();
+      const jobEl=document.getElementById('job');let job=jobEl.value.trim();
+      if(jobEl.tagName==='INPUT'&&job&&!customJobs.includes(job)){customJobs.unshift(job);saveJobs()}
+      const notes=document.getElementById('notes').value.trim();if(!notes){alert('Add notes!');return}
+      const date=document.getElementById('entry-date').value;if(!date){alert('Pick a date!');return}
+      const start=document.getElementById('start-time').value||"07:00";
+      const finish=document.getElementById('finish-time').value||"15:30";
+      const sM=timeToMins(start), fM=timeToMins(finish);
+      const raw=(fM-sM)/60; const isSat=new Date(date).getDay()===6;
+      let normal=0, ot=0;
+      if(isSat)ot=raw;
+      else{const ds=7*60,de=15.5*60;const before=Math.max(0,Math.min(fM,ds)-sM)/60;const during=Math.max(0,Math.min(fM,de)-Math.max(sM,ds))/60;const after=Math.max(0,fM-Math.max(sM,de))/60;ot=before+after;normal=during>0?during-0.5:0}
+      const paid=(normal+ot).toFixed(2);
+      const entry={times:start+' – '+finish,paid,ot:ot.toFixed(2),notes,job};
+      if(!week[date])week[date]=[];
+      week[date].push(entry);save();render();
+      document.getElementById('notes').value='';restoreSelect(job);
+      alert('ENTRY ADDED!');
+    };
 
-      // Auto-save custom location
-      if (jobElement.tagName === 'INPUT' && job) {
-        if (!customJobs.includes(job)) {
-          customJobs.unshift(job);
-          saveJobs();
-        }
+    // EDIT & DELETE
+    function editEntry(date, index){
+      const entry = week[date][index];
+      document.getElementById('entry-date').value = date;
+      const [start, finish] = entry.times.split(' – ');
+      document.getElementById('start-time').value = start;
+      document.getElementById('finish-time').value = finish;
+      document.getElementById('notes').value = entry.notes;
+      restoreSelect(entry.job);
+      week[date].splice(index,1);
+      if(week[date].length===0)delete week[date];
+      save();render();
+      alert('Now edit and re-add the entry');
+    }
+    function deleteEntry(date, index){
+      if(confirm('Delete this entry?')){
+        week[date].splice(index,1);
+        if(week[date].length===0)delete week[date];
+        save();render();
       }
+    }
 
-      const notes = document.getElementById('notes').value.trim();
-      if (!notes) { alert('Add notes!'); return; }
-
-      const entryDate = document.getElementById('entry-date').value;
-      if (!entryDate) { alert('Select a date!'); return; }
-
-      const start = document.getElementById('start-time').value || "07:00";
-      const finish = document.getElementById('finish-time').value || "15:30";
-      const startMins = timeToMins(start);
-      const finishMins = timeToMins(finish);
-
-      // Check for time clash on selected day
-      if (week[entryDate]) {
-        for (let e of week[entryDate]) {
-          const eStart = timeToMins(e.times.split(' – ')[0]);
-          const eEnd = timeToMins(e.times.split(' – ')[1]);
-          if (startMins < eEnd && finishMins > eStart) {
-            alert('TIME CLASH! Already have ' + e.times + ' on ' + entryDate); return;
-          }
-        }
-      }
-
-      const raw = (finishMins - startMins) / 60;
-      const isSat = new Date(entryDate).getDay() === 6;
-      let normal = 0, ot = 0;
-      if (isSat) {
-        ot = raw;
-      } else {
-        const dayStart = 7 * 60;
-        const dayEnd = 15.5 * 60;
-        const before = Math.max(0, Math.min(finishMins, dayStart) - startMins) / 60;
-        const during = Math.max(0, Math.min(finishMins, dayEnd) - Math.max(startMins, dayStart)) / 60;
-        const after = Math.max(0, finishMins - Math.max(startMins, dayEnd)) / 60;
-        ot = before + after;
-        normal = during > 0 ? during - 0.5 : 0;
-      }
-
-      const paid = (normal + ot).toFixed(2);
-      const entry = { times: start + ' – ' + finish, paid, ot: ot.toFixed(2), notes, job };
-      if (!week[entryDate]) week[entryDate] = [];
-      week[entryDate].push(entry);
-      save(); render();
-
-      if ('vibrate' in navigator) { navigator.vibrate([100, 50, 100]); }
-
-      document.getElementById('notes').value = '';
-      restoreSelect(job);
-      alert('ENTRY ADDED FOR ' + entryDate + '!');
-    });
-
-    function render() {
-      let html = '';
-      Object.keys(week).sort().reverse().forEach(date => {
-        const dayName = new Date(date + 'T12:00:00').toLocaleDateString('en-AU', { ...melb, weekday: 'long', day: 'numeric', month: 'short' });
-        week[date].forEach(e => {
-          const otTag = e.ot > 0 ? ` <span class="ot">(OT: ${e.ot} hrs)</span>` : '';
-          html += `<div class="day">
-            <b>${dayName}</b> | ${e.job}<br>
-            ${e.times}   <b>${e.paid} hrs</b>${otTag}<pre>${e.notes}</pre>
+    function render(){
+      let html='';
+      Object.keys(week).sort().reverse().forEach(d=>{
+        const name=new Date(d+'T12:00').toLocaleDateString('en-AU',{...melb,weekday:'long',day:'numeric',month:'short'});
+        week[d].forEach((e,i)=>{
+          const ot=e.ot>0?` <span class="ot">(OT: ${e.ot} hrs)</span>`:'';
+          html+=`<div class="day" onclick="editEntry('${d}',${i})">
+            <div class="day-header">
+              <b>${name} | ${e.job}</b>
+              <button onclick="event.stopPropagation();deleteEntry('${d}',${i})">Delete</button>
+            </div>
+            ${e.times} <b>${e.paid} hrs</b>${ot}
+            <pre>${e.notes}</pre>
           </div>`;
         });
       });
-      document.getElementById('output').innerHTML = html || '<div style="text-align:center;padding:60px;color:#666;font-size:17px">No entries yet</div>';
+      document.getElementById('output').innerHTML=html||'<div style="text-align:center;padding:60px;color:#666;font-size:17px">No entries yet</div>';
     }
 
-    // EXPORT TO PDF
-    async function exportPDF() {
+    async function exportPDF(){
       saveName();
-      const name = document.getElementById('user-name').value.trim() || 'Employee';
-      document.getElementById('pdf-name').innerText = `${name}'s Timesheet`;
-      document.getElementById('pdf-week').innerText = `Week ending ${weekEnding}`;
-
-      let rows = '';
-      Object.keys(week).sort().reverse().forEach(date => {
-        const dayName = new Date(date + 'T12:00:00').toLocaleDateString('en-AU', { ...melb, weekday: 'long', day: 'numeric', month: 'short' });
-        week[date].forEach(e => {
-          const ot = e.ot > 0 ? `<span class="ot">OT: ${e.ot} hrs</span>` : '';
-          rows += `<tr>
-            <td>${dayName}</td>
-            <td>${e.job}</td>
-            <td>${e.times}</td>
-            <td>${e.paid} hrs ${ot}</td>
-            <td class="notes">${e.notes.replace(/\n/g, '<br>')}</td>
-          </tr>`;
-        });
-      });
-      document.getElementById('pdf-body').innerHTML = rows || '<tr><td colspan="5" style="text-align:center;color:#999;">No entries</td></tr>';
-
-      const element = document.getElementById('pdf-template');
-      const canvas = await html2canvas(element, { scale: 2 });
-      const imgData = canvas.toDataURL('image/png');
-      const { jsPDF } = window.jspdf;
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const width = pdf.internal.pageSize.getWidth();
-      const height = (canvas.height * width) / canvas.width;
-      pdf.addImage(imgData, 'PNG', 0, 0, width, height);
-      pdf.save(`Timesheet_${name.replace(' ', '_')}_${weekEnding.replace(/ /g, '_')}.pdf`);
+      const canvas=await html2canvas(document.body,{scale:2});
+      const img=canvas.toDataURL('image/png');
+      const {jsPDF}=window.jspdf;
+      const pdf=new jsPDF('p','mm','a4');
+      const w=pdf.internal.pageSize.getWidth();
+      const h=(canvas.height*w)/canvas.width;
+      pdf.addImage(img,'PNG',0,0,w,h);
+      const name=document.getElementById('user-name').value.trim()||'Employee';
+      pdf.save(`Timesheet_${name}_${new Date().toISOString().split('T')[0]}.pdf`);
     }
 
-    function deleteAll() {
-      if (confirm('DELETE EVERYTHING?')) { week = {}; save(); render(); alert('ALL GONE'); }
-    }
+    function deleteAll(){if(confirm('DELETE EVERYTHING?')){week={};save();render();alert('ALL GONE')}}
 
-    render();
-    renderJobs();
+    render(); renderJobs();
   </script>
 </body>
 </html>
