@@ -32,11 +32,12 @@
     .time-field { flex: 1; max-width: 115px; text-align: center; }
     .time-field > div { font-size: 17px; color: #00d4ff; margin-bottom: 8px; font-weight: 600; }
     .time-box { background: rgba(20,26,46,0.7); border: 1px solid rgba(0,212,255,0.3); border-radius: 18px; padding: 10px 4px; height: 56px; display: flex; align-items: center; justify-content: center; }
-    .time-box input { background: transparent; border: none; color: white; font-size: 26px; font-weight: bold; text-align: center; width: 100%; outline: none; }
+    .time-box input { background: transparent; border: none; color: white; font-size: 26px; font-weight: bold; text-align: center; width: 100%; outline: none; -webkit-appearance: none; appearance: none; }
 
-    .day { background: rgba(20,26,46,0.9); border-radius: 18px; padding: 18px; margin: 14px 0; border: 1px solid rgba(0,212,255,0.3); position: relative; }
+    .day { background: rgba(20,26,46,0.9); border-radius: 18px; padding: 18px; margin: 14px 0; border: 1px solid rgba(0,212,255,0.3); cursor: pointer; transition: 0.2s; }
+    .day:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,212,255,0.3); }
     .day-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-    .day-header button { background: #ff3b5c; padding: 8px 14px; border-radius: 12px; font-size: 14px; }
+    .day-header button { background: #ff3b5c; padding: 8px 14px; border-radius: 12px; font-size: 14px; font-weight: bold; }
     pre { background: rgba(0,0,0,0.3); padding: 14px; border-radius: 14px; white-space: pre-wrap; font-size: 17px; margin: 10px 0; line-height: 1.6; }
     .ot { color: #00ff9d; font-weight: bold; }
 
@@ -44,6 +45,16 @@
     button:hover { transform: translateY(-2px); }
     .export-pdf { background: linear-gradient(135deg,#00ff9d,#00d4ff); padding: 24px; font-size: 26px; border-radius: 30px; }
     .delete-all { background: #ff3b5c; color: white; padding: 24px; font-size: 26px; }
+
+    /* PDF TEMPLATE – HIDDEN BUT PERFECT */
+    #pdf-template { position: absolute; left: -9999px; top: 0; width: 800px; padding: 60px; background: white; color: #000; font-family: Helvetica, sans-serif; }
+    #pdf-template .header { text-align: center; margin-bottom: 40px; }
+    #pdf-template .logo { width: 80px; border-radius: 16px; margin-bottom: 16px; }
+    #pdf-template h1 { font-size: 36px; background: linear-gradient(90deg,#00d4ff,#00aaff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    #pdf-template table { width: 100%; border-collapse: collapse; margin-top: 30px; font-size: 16px; }
+    #pdf-template th, #pdf-template td { border: 1px solid #ddd; padding: 14px; text-align: left; }
+    #pdf-template th { background: linear-gradient(135deg,#00d4ff,#00aaff); color: white; }
+    #pdf-template .ot { color: #00aa00; font-weight: bold; }
   </style>
 </head>
 <body>
@@ -94,6 +105,22 @@
     <button class="delete-all" onclick="deleteAll()">DELETE ALL ENTRIES</button>
   </div>
 
+  <!-- HIDDEN PDF TEMPLATE -->
+  <div id="pdf-template">
+    <div class="header">
+      <img src="IMG_2776.jpeg" alt="Logo" class="logo">
+      <h1>TimeLatch</h1>
+      <div style="font-size:20px;margin-top:10px;" id="pdf-name">Timesheet</div>
+      <div style="font-size:18px;color:#555;" id="pdf-week"></div>
+    </div>
+    <table>
+      <thead>
+        <tr><th>Date</th><th>Location</th><th>Time</th><th>Hours</th><th>Notes</th></tr>
+      </thead>
+      <tbody id="pdf-body"></tbody>
+    </table>
+  </div>
+
   <script>
     // Particles
     const canvas = document.getElementById('particles'); const ctx = canvas.getContext('2d');
@@ -106,6 +133,10 @@
     document.getElementById('today-date').innerText = now.toLocaleDateString('en-AU',{...melb,weekday:'long',day:'numeric',month:'long',year:'numeric'});
     document.getElementById('entry-date').value = now.toISOString().split('T')[0];
 
+    const lastMonday = new Date(now);
+    lastMonday.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+    const weekEnding = lastMonday.toLocaleDateString('en-AU', {...melb, weekday:'long', day:'numeric', month:'long', year:'numeric'});
+
     let week = JSON.parse(localStorage.getItem('timelatch_week')||'{}');
     let customJobs = JSON.parse(localStorage.getItem('timelatch_jobs')||'[]');
     const wrapper = document.querySelector('.job-location-wrapper');
@@ -114,7 +145,6 @@
     function saveJobs(){localStorage.setItem('timelatch_jobs',JSON.stringify(customJobs));renderJobs()}
     function saveName(){const n=document.getElementById('user-name').value.trim();if(n)localStorage.setItem('timelatch_name',n)}
 
-    // Custom location handling
     wrapper.addEventListener('change',e=>{if(e.target.value==='other'){
       wrapper.innerHTML=`<input type="text" id="job" placeholder="Type new location..." autocomplete="off" style="width:100%;padding:18px;background:rgba(255,255,255,0.08);border:1px solid rgba(0,212,255,0.25);border-radius:20px;color:white;font-size:18px;margin:12px 0;">`;
       const input=document.getElementById('job');input.focus();
@@ -135,7 +165,6 @@
 
     function timeToMins(t){const[h,m]=t.split(':').map(Number);return h*60+m}
 
-    // ADD NEW ENTRY
     document.getElementById('add-btn').onclick=()=>{
       saveName();
       const jobEl=document.getElementById('job');let job=jobEl.value.trim();
@@ -157,7 +186,6 @@
       alert('ENTRY ADDED!');
     };
 
-    // EDIT & DELETE
     function editEntry(date, index){
       const entry = week[date][index];
       document.getElementById('entry-date').value = date;
@@ -169,7 +197,7 @@
       week[date].splice(index,1);
       if(week[date].length===0)delete week[date];
       save();render();
-      alert('Now edit and re-add the entry');
+      alert('Edit above and re-add');
     }
     function deleteEntry(date, index){
       if(confirm('Delete this entry?')){
@@ -200,14 +228,34 @@
 
     async function exportPDF(){
       saveName();
-      const canvas=await html2canvas(document.body,{scale:2});
-      const img=canvas.toDataURL('image/png');
-      const {jsPDF}=window.jspdf;
-      const pdf=new jsPDF('p','mm','a4');
-      const w=pdf.internal.pageSize.getWidth();
-      const h=(canvas.height*w)/canvas.width;
+      const name = document.getElementById('user-name').value.trim()||'Employee';
+      document.getElementById('pdf-name').innerText = `${name}'s Timesheet`;
+      document.getElementById('pdf-week').innerText = `Week ending ${weekEnding}`;
+
+      let rows = '';
+      Object.keys(week).sort().reverse().forEach(d=>{
+        const name=new Date(d+'T12:00').toLocaleDateString('en-AU',{...melb,weekday:'long',day:'numeric',month:'short'});
+        week[d].forEach(e=>{
+          const ot = e.ot>0 ? `<span class="ot">OT: ${e.ot} hrs</span>` : '';
+          rows += `<tr>
+            <td>${name}</td>
+            <td>${e.job}</td>
+            <td>${e.times}</td>
+            <td>${e.paid} hrs ${ot}</td>
+            <td style="font-style:italic;">${e.notes.replace(/\n/g,'<br>')}</td>
+          </tr>`;
+        });
+      });
+      document.getElementById('pdf-body').innerHTML = rows || '<tr><td colspan="5" style="text-align:center;color:#999;">No entries</td></tr>';
+
+      const element = document.getElementById('pdf-template');
+      const canvas = await html2canvas(element, {scale: 2, backgroundColor: '#ffffff'});
+      const img = canvas.toDataURL('image/png');
+      const {jsPDF} = window.jspdf;
+      const pdf = new jsPDF('p','mm','a4');
+      const w = pdf.internal.pageSize.getWidth();
+      const h = (canvas.height * w) / canvas.width;
       pdf.addImage(img,'PNG',0,0,w,h);
-      const name=document.getElementById('user-name').value.trim()||'Employee';
       pdf.save(`Timesheet_${name}_${new Date().toISOString().split('T')[0]}.pdf`);
     }
 
