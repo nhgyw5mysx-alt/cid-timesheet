@@ -1,65 +1,146 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>TimeLatch</title>
-
-  <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@600;700&display=swap" rel="stylesheet">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; background: #0a0e1a; color: white; min-height: 100vh; padding: 20px 16px; position: relative; overflow-x: hidden; }
-    canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
-    .app { max-width: 500px; margin: 0 auto; position: relative; z-index: 1; }
-
-    .header { text-align: center; margin-bottom: 32px; }
-    .logo-img { width: 90px; border-radius: 18px; box-shadow: 0 0 28px rgba(0,212,255,0.5); animation: pulse 3s infinite ease-in-out; }
-    @keyframes pulse { 0%,100%{box-shadow:0 0 20px rgba(0,212,255,0.4)} 50%{box-shadow:0 0 38px rgba(0,212,255,0.7)} }
-    h1 { font-family: 'Exo 2', sans-serif; font-size: 40px; font-weight: 700; background: linear-gradient(90deg,#00d4ff,#00aaff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-top: 12px; }
-
-    .today-date { font-family: 'Exo 2', sans-serif; font-size: 28px; color: #00d4ff; text-align: center; margin: 24px 0 32px; text-shadow: 0 0 10px rgba(0,212,255,0.4); }
-
-    .section { margin-bottom: 28px; padding: 0 8px; }
-    .section-title { font-size: 26px; color: #00d4ff; text-align: center; margin: 16px 0 20px; font-weight: 700; }
-
-    input, textarea, select { width: 100%; padding: 18px; background: rgba(255,255,255,0.08); border: 1px solid rgba(0,212,255,0.25); border-radius: 20px; color: white; font-size: 18px; margin: 12px 0; }
-    textarea { height: 160px; resize: none; }
-
-    .time-inputs { display: flex; gap: 12px; margin: 20px 0; justify-content: center; align-items: center; }
-    .time-field { flex: 1; text-align: center; }
-    .time-field > div { font-size: 16px; color: #00d4ff; margin-bottom: 8px; font-weight: 600; }
-    .time-box { background: rgba(20,26,46,0.7); border: 1px solid rgba(0,212,255,0.3); border-radius: 18px; height: 56px; display: flex; align-items: center; justify-content: center; padding: 0 8px; overflow: hidden; }
-    .time-box input[type="date"] { font-size: 16px; font-weight: bold; color: white; text-align: center; width: 100%; background: transparent; border: none; outline: none; -webkit-appearance: none; appearance: none; letter-spacing: 0.5px; }
-    .time-box input[type="time"] { font-size: 24px; font-weight: bold; color: white; text-align: center; width: 100%; background: transparent; border: none; outline: none; -webkit-appearance: none; }
-
-    .day { background: rgba(20,26,46,0.9); border-radius: 18px; padding: 18px; margin: 14px 0; border: 1px solid rgba(0,212,255,0.3); cursor: pointer; }
-    .day:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,212,255,0.3); }
-    .day-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-    .day-header button { background: #ff3b5c; padding: 8px 14px; border-radius: 12px; font-size: 14px; font-weight: bold; }
-    pre { background: rgba(0,0,0,0.3); padding: 14px; border-radius: 14px; white-space: pre-wrap; font-size: 17px; margin: 10px 0; line-height: 1.6; }
-    .ot { color: #00ff9d; font-weight: bold; }
-
-    button { width: 100%; padding: 20px; background: #00d4ff; color: #0a0e1a; border: none; border-radius: 22px; font-size: 22px; font-weight: bold; margin: 16px 0; cursor: pointer; box-shadow: 0 6px 16px rgba(0,212,255,0.3); }
-    button:hover { transform: translateY(-2px); }
-    .export-pdf { background: linear-gradient(135deg,#00ff9d,#00d4ff); padding: 24px; font-size: 26px; border-radius: 30px; }
-    .delete-all { background: #ff3b5c; color: white; padding: 24px; font-size: 26px; }
-
-    #pdf-template { position: absolute; left: -9999px; top: 0; width: 800px; padding: 60px; background: white; color: #000; font-family: Helvetica, sans-serif; }
-    #pdf-template .header { text-align: center; margin-bottom: 40px; }
-    #pdf-template .logo { width: 80px; border-radius: 16px; margin-bottom: 16px; }
-    #pdf-template h1 { font-size: 36px; background: linear-gradient(90deg,#00d4ff,#00aaff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-    #pdf-template table { width: 100%; border-collapse: collapse; margin-top: 30px; font-size: 16px; }
-    #pdf-template th, #pdf-template td { border: 1px solid #ddd; padding: 14px; text-align: left; }
-    #pdf-template th { background: linear-gradient(135deg,#00d4ff,#00aaff); color: white; }
-    #pdf-template .ot { color: #00aa00; font-weight: bold; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>TimeLatch</title>
+<link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0a0e1a;color:white;min-height:100vh;padding:20px 16px;position:relative;overflow-x:hidden}canvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none}.app{max-width:500px;margin:0 auto;position:relative;z-index:1}
+.header{text-align:center;margin-bottom:32px}.logo-img{width:90px;border-radius:18px;box-shadow:0 0 28px rgba(0,212,255,0.5);animation:pulse 3s infinite}@keyframes pulse{0%,100%{box-shadow:0 0 20px rgba(0,212,255,0.4)}50%{box-shadow:0 0 38px rgba(0,212,255,0.7)}}
+h1{font-family:'Exo 2',sans-serif;font-size:40px;font-weight:700;background:linear-gradient(90deg,#00d4ff,#00aaff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-top:12px}
+.today-date{font-family:'Exo 2',sans-serif;font-size:28px;color:#00d4ff;text-align:center;margin:24px 0 32px;text-shadow:0 0 10px rgba(0,212,255,0.4)}
+.section{margin-bottom:28px;padding:0 8px}.section-title{font-size:26px;color:#00d4ff;text-align:center;margin:16px 0 20px;font-weight:700}
+input,textarea,select{width:100%;padding:18px;background:rgba(255,255,255,0.08);border:1px solid rgba(0,212,255,0.25);border-radius:20px;color:white;font-size:18px;margin:12px 0}textarea{height:160px;resize:none}
+.time-inputs{display:flex;gap:12px;margin:20px 0;justify-content:center;align-items:center}.time-field{flex:1;text-align:center}.time-field>div{font-size:16px;color:#00d4ff;margin-bottom:8px;font-weight:600}
+.time-box{background:rgba(20,26,46,0.7);border:1px solid rgba(0,212,255,0.3);border-radius:18px;height:56px;display:flex;align-items:center;justify-content:center;padding:0 8px;overflow:hidden}
+.time-box input[type="date"]{font-size:16px;font-weight:bold;color:white;text-align:center;width:100%;background:transparent;border:none;outline:none;-webkit-appearance:none}
+.time-box input[type="time"]{font-size:24px;font-weight:bold;color:white;text-align:center;width:100%;background:transparent;border:none;outline:none;-webkit-appearance:none}
+input[type="date"]::-webkit-datetime-edit,input[type="date"]::-webkit-datetime-edit-fields-wrapper,input[type="date"]::-webkit-datetime-edit-text,input[type="date"]::-webkit-datetime-edit-month-field,input[type="date"]::-webkit-datetime-edit-day-field,input[type="date"]::-webkit-datetime-edit-year-field{color:white;font-weight:bold}
+.day{background:rgba(20,26,46,0.9);border-radius:18px;padding:18px;margin:14px 0;border:1px solid rgba(0,212,255,0.3);cursor:pointer}.day:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(0,212,255,0.3)}
+.day-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}.day-header button{background:#ff3b5c;padding:8px 14px;border-radius:12px;font-size:14px;font-weight:bold}
+pre{background:rgba(0,0,0,0.3);padding:14px;border-radius:14px;white-space:pre-wrap;font-size:17px;margin:10px 0;line-height:1.6}.ot{color:#00ff9d;font-weight:bold}
+button{width:100%;padding:20px;background:#00d4ff;color:#0a0e1a;border:none;border-radius:22px;font-size:22px;font-weight:bold;margin:16px 0;cursor:pointer;box-shadow:0 6px 16px rgba(0,212,255,0.3)}button:hover{transform:translateY(-2px)}
+.export-pdf{background:linear-gradient(135deg,#00ff9d,#00d4ff);padding:24px;font-size:26px;border-radius:30px}.delete-all{background:#ff3b5c;color:white;padding:24px;font-size:26px}
+</style>
 </head>
 <body>
-  <canvas id="particles"></canvas>
-  <div class="app">
+<canvas id="particles"></canvas>
+<div class="app">
+  <div class="header"><img src="IMG_2776.jpeg" alt="Logo" class="logo-img"><h1>TimeLatch</h1></div>
+  <div class="today-date" id="today-date"></div>
+  <div class="section"><div class="section-title">Your Name</div><input type="text" id="user-name" placeholder="e.g. Daniel"></div>
+  <div class="section">
+    <div class="time-inputs">
+      <div class="time-field"><div>DAY</div><div class="time-box"><input type="date" id="entry-date"></div></div>
+      <div class="time-field"><div>START</div><div class="time-box"><input type="time" id="start-time" value="07:00"></div></div>
+      <div class="time-field"><div>FINISH</div><div class="time-box"><input type="time" id="finish-time" value="15:30"></div></div>
+    </div>
+  </div>
+  <div class="section"><div class="section-title">Job Location</div>
+    <div class="job-location-wrapper">
+      <select id="job">
+        <option value="CSL Broadmeadows">CSL Broadmeadows</option>
+        <option value="CSL Tullamarine">CSL Tullamarine</option>
+        <option value="CSL Melbourne">CSL Melbourne</option>
+        <option value="other">+ Add Custom Location</option>
+      </select>
+    </div>
+  </div>
+  <div class="section"><div class="section-title">Notes</div><textarea id="notes" placeholder="Type everything here…"></textarea><button id="add-btn">ADD ENTRY</button></div>
+  <div class="section"><div class="section-title">Your Week So Far</div><div id="output"></div></div>
+  <button class="export-pdf" onclick="exportPDF()">Export PDF Timesheet</button>
+  <button class="delete-all" onclick="deleteAll()">DELETE ALL ENTRIES</button>
+</div>
 
-    <div class="header">
-      <img src="IMG
+<script>
+const canvas=document.getElementById('particles'),ctx=canvas.getContext('2d');canvas.width=innerWidth;canvas.height=innerHeight;
+const particles=Array.from({length:50},()=>({x:Math.random()*canvas.width,y:Math.random()*canvas.height,radius:Math.random()*1.6+1,speed:Math.random()*0.4+0.2,angle:Math.random()*Math.PI*2}));
+function animate(){ctx.clearRect(0,0,canvas.width,canvas.height);particles.forEach(p=>{p.x+=Math.cos(p.angle)*p.speed;p.y+=Math.sin(p.angle)*p.speed;if(p.x<0||p.x>canvas.width)p.angle=Math.PI-p.angle;if(p.y<0||p.y>canvas.height)p.angle=-p.angle;ctx.beginPath();ctx.arc(p.x,p.y,p.radius,0,Math.PI*2);ctx.fillStyle='rgba(0,212,255,0.5)';ctx.fill()});requestAnimationFrame(animate);}animate();
+window.addEventListener('resize',()=>{canvas.width=innerWidth;canvas.height=innerHeight});
+
+const now=new Date(),melb={timeZone:'Australia/Melbourne'};
+document.getElementById('today-date').innerText=now.toLocaleDateString('en-AU',{...melb,weekday:'long',day:'numeric',month:'long',year:'numeric'});
+document.getElementById('entry-date').value=now.toISOString().split('T')[0];
+
+let week=JSON.parse(localStorage.getItem('timelatch_week')||'{}');
+let customJobs=JSON.parse(localStorage.getItem('timelatch_jobs')||'[]');
+const wrapper=document.querySelector('.job-location-wrapper');
+
+function save(){localStorage.setItem('timelatch_week',JSON.stringify(week))}
+function saveJobs(){localStorage.setItem('timelatch_jobs',JSON.stringify(customJobs));renderJobs()}
+function saveName(){const n=document.getElementById('user-name').value.trim();if(n)localStorage.setItem('timelatch_name',n)}
+
+wrapper.addEventListener('change',e=>{if(e.target.value==='other'){
+  wrapper.innerHTML=`<input type="text" id="job" placeholder="Type new location..." style="width:100%;padding:18px;background:rgba(255,255,255,0.08);border:1px solid rgba(0,212,255,0.25);border-radius:20px;color:white;font-size:18px;margin:12px 0;">`;
+  const input=document.getElementById('job');input.focus();
+  input.addEventListener('keydown',ev=>{if(ev.key==='Enter'){ev.preventDefault();const v=input.value.trim();if(v&&!customJobs.includes(v)){customJobs.unshift(v);saveJobs()}restoreSelect(v||'')}});
+  const clickOutside=ev=>{if(!wrapper.contains(ev.target)){restoreSelect();document.removeEventListener('click',clickOutside)}};
+  setTimeout(()=>document.addEventListener('click',clickOutside),0);
+}});
+function restoreSelect(selected=''){
+  wrapper.innerHTML=`<select id="job"><option value="CSL Broadmeadows">CSL Broadmeadows</option><option value="CSL Tullamarine">CSL Tullamarine</option><option value="CSL Melbourne">CSL Melbourne</option><option value="other">+ Add Custom Location</option></select>`;
+  renderJobs();if(selected)document.getElementById('job').value=selected;
+}
+function renderJobs(){
+  const s=document.getElementById('job');
+  if(s&&s.tagName==='SELECT'){while(s.options.length>4)s.remove(4);customJobs.forEach(j=>s.add(new Option(j,j),s.options[s.options.length-1]))}
+}
+function timeToMins(t){const[h,m]=t.split(':').map(Number);return h*60+m}
+document.getElementById('add-btn').onclick=()=>{
+  saveName();
+  const jobEl=document.getElementById('job');let job=jobEl.value.trim();
+  if(jobEl.tagName==='INPUT'&&job&&!customJobs.includes(job)){customJobs.unshift(job);saveJobs()}
+  const notes=document.getElementById('notes').value.trim();if(!notes){alert('Add notes!');return}
+  const date=document.getElementById('entry-date').value;if(!date){alert('Pick a date!');return}
+  const start=document.getElementById('start-time').value||"07:00";
+  const finish=document.getElementById('finish-time').value||"15:30";
+  const sM=timeToMins(start),fM=timeToMins(finish);
+  const raw=(fM-sM)/60;const isSat=new Date(date).getDay()===6;
+  let normal=0,ot=0;
+  if(isSat)ot=raw;
+  else{const ds=7*60,de=15.5*60;const before=Math.max(0,Math.min(fM,ds)-sM)/60;const during=Math.max(0,Math.min(fM,de)-Math.max(sM,ds))/60;const after=Math.max(0,fM-Math.max(sM,de))/60;ot=before+after;normal=during>0?during-0.5:0}
+  const paid=(normal+ot).toFixed(2);
+  const entry={times:start+' – '+finish,paid,ot:ot.toFixed(2),notes,job};
+  if(!week[date])week[date]=[];
+  week[date].push(entry);save();render();
+  document.getElementById('notes').value='';restoreSelect(job);
+  alert('ENTRY ADDED!');
+};
+function editEntry(d,i){const e=week[d][i];document.getElementById('entry-date').value=d;const[s,f]=e.times.split(' – ');document.getElementById('start-time').value=s;document.getElementById('finish-time').value=f;document.getElementById('notes').value=e.notes;restoreSelect(e.job);week[d].splice(i,1);if(week[d].length===0)delete week[d];save();render();alert('Edit above & re-add')}
+function deleteEntry(d,i){if(confirm('Delete this entry?')){week[d].splice(i,1);if(week[d].length===0)delete week[d];save();render()}}
+function render(){
+  let html='';
+  Object.keys(week).sort().reverse().forEach(d=>{
+    const name=new Date(d+'T12:00').toLocaleDateString('en-AU',{...melb,weekday:'long',day:'numeric',month:'short'});
+    week[d].forEach((e,i)=>{
+      const ot=e.ot>0?` <span class="ot">(OT: ${e.ot} hrs)</span>`:'';
+      html+=`<div class="day" onclick="editEntry('${d}',${i})">
+        <div class="day-header"><b>${name} | ${e.job}</b><button onclick="event.stopPropagation();deleteEntry('${d}',${i})">Delete</button></div>
+        ${e.times} <b>${e.paid} hrs</b>${ot}<pre>${e.notes}</pre>
+      </div>`;
+    });
+  });
+  document.getElementById('output').innerHTML=html||'<div style="text-align:center;padding:60px;color:#666;font-size:17px">No entries yet</div>';
+}
+async function exportPDF(){
+  saveName();
+  const name=document.getElementById('user-name').value.trim()||'Employee';
+  document.body.style.background='#ffffff';document.querySelector('.app').style.color='#000';
+  const canvas=await html2canvas(document.body,{scale:2,backgroundColor:'#ffffff'});
+  document.body.style.background='#0a0e1a';document.querySelector('.app').style.color='white';
+  const img=canvas.toDataURL('image/png');
+  const {jsPDF}=window.jspdf;
+  const pdf=new jsPDF('p','mm','a4');
+  const w=pdf.internal.pageSize.getWidth();
+  const h=(canvas.height*w)/canvas.width;
+  pdf.addImage(img,'PNG',0,0,w,h);
+  pdf.save(`Timesheet_${name}_${new Date().toISOString().split('T')[0]}.pdf`);
+}
+function deleteAll(){if(confirm('DELETE EVERYTHING?')){week={};save();render();alert('ALL GONE')}}
+render();renderJobs();
+</script>
+</body>
+</html>
