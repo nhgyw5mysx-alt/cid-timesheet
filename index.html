@@ -18,7 +18,7 @@ h1{font-family:'Exo 2',sans-serif;font-size:40px;font-weight:700;background:line
 input,textarea,select{width:100%;padding:18px;background:rgba(255,255,255,0.08);border:1px solid rgba(0,212,255,0.25);border-radius:20px;color:white;font-size:18px;margin:12px 0}textarea{height:160px;resize:none}
 .time-inputs{display:flex;gap:12px;margin:20px 0;justify-content:center;align-items:center}.time-field{flex:1;text-align:center}.time-field>div{font-size:16px;color:#00d4ff;margin-bottom:8px;font-weight:600}
 .time-box{background:rgba(20,26,46,0.7);border:1px solid rgba(0,212,255,0.3);border-radius:18px;height:56px;display:flex;align-items:center;justify-content:center;padding:0 8px;overflow:hidden}
-.time-box input[type="date"],.time-box input[type="time"]{font-size:18px;font-weight:bold;color:white;text-align:center;width:100%;background:transparent;border:none;outline:none;-webkit-appearance:none}
+.time-box input{font-size:18px;font-weight:bold;color:white;text-align:center;width:100%;background:transparent;border:none;outline:none;-webkit-appearance:none}
 .day{background:rgba(20,26,46,0.9);border-radius:18px;padding:18px;margin:14px 0;border:1px solid rgba(0,212,255,0.3);cursor:pointer}.day:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(0,212,255,0.3)}
 .day-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}.day-header button{background:#ff3b5c;padding:8px 14px;border-radius:12px;font-size:14px;font-weight:bold}
 pre{background:rgba(0,0,0,0.3);padding:14px;border-radius:14px;white-space:pre-wrap;font-size:17px;margin:10px 0;line-height:1.6}.ot{color:#00ff9d;font-weight:bold}
@@ -42,9 +42,7 @@ button{width:100%;padding:20px;background:#00d4ff;color:#0a0e1a;border:none;bord
   </div>
   <div class="section"><div class="section-title">Job Location</div>
     <div class="job-location-wrapper">
-      <select id="job">
-        <option value="">Loading locations…</option>
-      </select>
+      <select id="job"><option>Loading locations…</option></select>
     </div>
   </div>
   <div class="section"><div class="section-title">Notes</div><textarea id="notes" placeholder="Type everything here…"></textarea><button id="add-btn">ADD ENTRY</button></div>
@@ -52,123 +50,9 @@ button{width:100%;padding:20px;background:#00d4ff;color:#0a0e1a;border:none;bord
   <button class="export-pdf" onclick="exportPDF()">Export PDF Timesheet</button>
   <button class="delete-all" onclick="deleteAll()">DELETE ALL ENTRIES</button>
 </div>
-<div id="toast">Location detected!</div>
-
-<!-- Hidden PDF template (unchanged)
-<div id="pdf-template" style="position:absolute;left:-9999px;top:0;width:800px;padding:60px;background:white;color:#000;font-family:Helvetica,sans-serif">
-  <div style="text-align:center;margin-bottom:40px">
-    <img src="IMG_2776.jpeg" width="80" style="border-radius:16px">
-    <h1 style="font-size:42px;margin:20px 0;background:linear-gradient(90deg,#00d4ff,#00aaff);-webkit-background-clip:text;-webkit-text-fill-color:transparent">TimeLatch Timesheet</h1>
-    <div style="font-size:22px" id="pdf-name">Employee Name</div>
-    <div style="font-size:18px;color:#555" id="pdf-week"></div>
-  </div>
-  <table style="width:100%;border-collapse:collapse;margin-top:30px;font-size:16px">
-    <thead><tr><th style="border:1px solid #ddd;padding:12px;background:linear-gradient(135deg,#00d4ff,#00aaff);color:white">Date</th><th style="border:1px solid #ddd;padding:12px;background:linear-gradient(135deg,#00d4ff,#00aaff);color:white">Location</th><th style="border:1px solid #ddd;padding:12px;background:linear-gradient(135deg,#00d4ff,#00aaff);color:white">Time</th><th style="border:1px solid #ddd;padding:12px;background:linear-gradient(135deg,#00d4ff,#00aaff);color:white">Hours</th><th style="border:1px solid #ddd;padding:12px;background:linear-gradient(135deg,#00d4ff,#00aaff);color:white">Notes</th></tr></thead>
-    <tbody id="pdf-body"></tbody>
-  </table>
-</div>
+<div id="toast"></div>
 
 <script>
-// Firebase config (public shared database – free forever)
-const firebaseConfig={apiKey:"AIzaSyDWa2L2e3V4m2y5j8k9l0p1q2r3s4t5u6v",authDomain:"timelatch-locations.firebaseapp.com",projectId:"timelatch-locations",storageBucket:"timelatch-locations.appspot.com",messagingSenderId:"1234567890",appId:"1:1234567890:web:abcdef123456"};
-firebase.initializeApp(firebaseConfig);
-const db=firebase.firestore();
-const locationsRef=db.collection("locations");
-
-// === GLOBAL VARIABLES ===
-const now=new Date(),melb={timeZone:'Australia/Melbourne'};
-let week=JSON.parse(localStorage.getItem('timelatch_week')||'{}');
-let allLocations=[]; // downloaded from cloud
-const wrapper=document.querySelector('.job-location-wrapper');
-const toast=document.getElementById('toast');
-
-function showToast(msg){toast.textContent=msg;toast.style.opacity=1;setTimeout(()=>toast.style.opacity=0,3000)}
-function save(){localStorage.setItem('timelatch_week',JSON.stringify(week))}
-function saveName(){const n=document.getElementById('user-name').value.trim();if(n)localStorage.setItem('timelatch_name',n)}
-
-// === DOWNLOAD ALL SHARED LOCATIONS
-async function loadSharedLocations(){
-  try{
-    const snap=await locationsRef.orderBy("count","desc").limit(300).get();
-    allLocations=snap.empty?[]:snap.docs.map(d=>({id:d.id,...d.data()}));
-    renderLocationSelect();
-    detectLocation(); // try auto-detect now we have the list
-  }catch(e){console.log("Offline mode – using cached locations");renderLocationSelect()}
-}
-function renderLocationSelect(selected=''){
-  let html=`<select id="job"><option value="">Select or add…</option>`;
-  allLocations.forEach(loc=>html+=`<option value="${loc.name}">${loc.name}</option>`);
-  html+=`<option value="other">+ Add New Location</option></select>`;
-  wrapper.innerHTML=html;
-  if(selected)document.getElementById('job').value=selected;
-}
-
-// UPLOAD NEW LOCATION (only if it doesn't exist already)
-async function uploadLocation(name,lat,lng){
-  const existing=allLocations.find(l=>l.name.toLowerCase()===name.toLowerCase());
-  if(existing){
-    await locationsRef.doc(existing.id).update({count:firebase.firestore.FieldValue.increment(1)});
-    return;
-  }
-  await locationsRef.add({name,lat,lng,count:1,createdAt:new Date()});
-  allLocations.unshift({name,lat,lng,count:1});
-  renderLocationSelect(name);
-}
-
-// AUTO LOCATION DETECTION
-function detectLocation(){
-  if(!navigator.geolocation)return;
-  navigator.geolocation.getCurrentPosition(pos=>{
-    const {latitude:lat,longitude:lng}=pos.coords;
-    let closest=null,dist=999;
-    allLocations.forEach(loc=>{
-      const d=Math.hypot(lat-loc.lat,lng-loc.lng)*111; // approx km
-      if(d<0.15&&d<dist){dist=d;closest=loc.name}
-    });
-    if(closest){
-      document.getElementById('job').value=closest;
-      showToast(`Detected: ${closest}`);
-    }
-  },null,{enableHighAccuracy:true,maximumAge:300000,timeout:10000});
-}
-
-// JOB SELECT LOGIC
-wrapper.addEventListener('change',async e=>{
-  if(e.target.value==='other'){
-    wrapper.innerHTML=`<input type="text" id="job" placeholder="Type new location name..." style="width:100%;padding:18px;background:rgba(255,255,255,0.08);border:1px solid rgba(0,212,255,0.25);border-radius:20px;color:white;font-size:18px;margin:12px 0;">`;
-    const input=document.getElementById('job');input.focus();
-    input.addEventListener('keydown',async ev=>{
-      if(ev.key==='Enter'){
-        ev.preventDefault();const name=input.value.trim();
-        if(name){
-          navigator.geolocation.getCurrentPosition(async pos=>{
-            await uploadLocation(name,pos.coords.latitude,pos.coords.longitude);
-            showToast(`Added & shared: ${name}`);
-          });
-        }
-        renderLocationSelect(name||'');
-      }
-    });
-  }
-});
-
-// REST OF YOUR ORIGINAL CODE (unchanged)
-document.getElementById('today-date').innerText=now.toLocaleDateString('en-AU',{...melb,weekday:'long',day:'numeric',month:'long',year:'numeric'});
-document.getElementById('entry-date').value=now.toISOString().split('T')[0];
-function timeToMins(t){const[h,m]=t.split(':').map(Number);return h*60+m}
-document.getElementById('add-btn').onclick=()=>{/* ← your full add-entry code here – same as before */}
-function render(){/* ← your render code here – same as before */}
-async function exportPDF(){/* ← your PDF code here – same as before */}
-function deleteAll(){if(confirm('DELETE EVERYTHING?')){week={};save();render();alert('ALL GONE')}}
-render(); // your existing render
-
-// KICK OFF
-loadSharedLocations();
-setInterval(detectLocation,60000); // re-check every minute
-document.addEventListener('visibilitychange',()=>{if(!document.hidden){detectLocation();loadSharedLocations()}});
-
-// PARTICLES (unchanged)
-const canvas=document.getElementById('particles'),ctx=canvas.getContext('2d');/* … same as before … */
-</script>
-</body>
-</html>
+// ==== INSTANT FALLBACK LOCATIONS (so it never stays stuck) ====
+const fallbackLocations=[
+  {name:"CSL Broadmeadows",lat:-
