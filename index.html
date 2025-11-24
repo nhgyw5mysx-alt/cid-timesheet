@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>TimeLatch</title>
 
+<!-- Full app mode -->
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="TimeLatch">
@@ -19,7 +20,7 @@
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0a0e1a;color:white;min-height:100vh;overflow-x:hidden;position:relative}
 canvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none}
-.app{max-width:500px;margin:0 auto;position:relative;z-index:1;padding:20px 16px 120px}
+.app{max-width:500px;margin:0 auto;position:relative;z-index:1;padding:20px 16px 140px}
 
 #offline-banner{position:fixed;top:0;left:0;right:0;background:#ff3b5c;color:white;text-align:center;padding:10px;font-size:14px;z-index:999;transform:translateY(-100%)}
 #offline-banner.show{transform:translateY(0)}
@@ -44,11 +45,12 @@ textarea{height:160px;resize:none}
 .time-field{flex:1;text-align:center}
 .time-field > div{font-size:16px;color:#00d4ff;margin-bottom:8px;font-weight:600}
 .time-box{background:rgba(20,26,46,0.7);border:1px solid rgba(0,212,255,0.3);border-radius:18px;height:56px;display:flex;align-items:center;justify-content:center;overflow:hidden}
-.time-box input{font-size:18px;font-weight:bold;color:white;background:transparent;border:none;text-align:center;width:100%}
-.day{background:rgba(20,26,46,0.9);border-radius:18px;padding:18px;margin:14px 0;border:1px solid rgba(0,212,255,0.3);cursor:pointer}
+.time-box input{font-size:18px;font-weight:bold;color:white;background:transparent;border:none;text-align:center;width:100%;-webkit-appearance:none}
+.day{background:rgba(20,26,46,0.9);border-radius:18px;padding:18px;margin:14px 0;border:1px solid rgba(0,212,255,0.3);cursor:pointer;transition:transform .2s}
+.day:hover{transform:translateY(-3px)}
 .day-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
-.day-header button{background:#ff3b5c;padding:8px 14px;border-radius:12px;font-size:14px;font-weight:bold;color:white}
-pre{background:rgba(0,0,0,0.3);padding:14px;border-radius:14px;white-space:pre-wrap;font-size:17px;line-height:1.6}
+.day-header button{background:#ff3b5c;padding:8px 14px;border-radius:12px;font-size:14px;font-weight:bold;color:white;border:none;cursor:pointer}
+pre{background:rgba(0,0,0,0.3);padding:14px;border-radius:14px;white-space:pre-wrap;font-size:17px;line-height:1.6;margin-top:10px}
 .ot{color:#00ff9d;font-weight:bold}
 button{width:100%;padding:20px;background:#00d4ff;color:#0a0e1a;border:none;border-radius:22px;font-size:22px;font-weight:bold;margin:16px 0;cursor:pointer}
 .export-pdf{background:linear-gradient(135deg,#00ff9d,#00d4ff);padding:24px;font-size:26px;border-radius:30px}
@@ -68,6 +70,7 @@ button{width:100%;padding:20px;background:#00d4ff;color:#0a0e1a;border:none;bord
 <div id="offline-banner">OFFLINE — Still works perfectly</div>
 <canvas id="particles"></canvas>
 
+<!-- Install modal -->
 <div id="install-modal">
   <div class="modal-content">
     <img src="IMG_2776.jpeg" alt="TimeLatch">
@@ -105,174 +108,4 @@ button{width:100%;padding:20px;background:#00d4ff;color:#0a0e1a;border:none;bord
   <div class="section"><div class="section-title">Notes</div><textarea id="notes" placeholder="Type everything here…"></textarea><button id="add-btn">ADD ENTRY</button></div>
   <div class="section"><div class="section-title">Your Week So Far</div><div id="output"></div></div>
   
-  <button class="export-pdf" onclick="exportPDF()">Export PDF Timesheet</button>
-  <button class="delete-all" onclick="deleteAll()">DELETE ALL ENTRIES</button>
-</div>
-
-<div id="toast"></div>
-
-<div id="pdf-template">
-  <div style="text-align:center;margin-bottom:40px">
-    <img src="IMG_2776.jpeg"><h1>TimeLatch Timesheet</h1>
-    <h2 id="pdf-name">Name</h2>
-  </div>
-  <table><thead><tr><th>Date</th><th>Location</th><th>Time</th><th>Hours</th><th>Notes</th></tr></thead><tbody id="pdf-body"></tbody></table>
-</div>
-
-<script>
-// Date
-const now = new Date();
-const melb = {timeZone: 'Australia/Melbourne'};
-document.getElementById('today-date').innerText = now.toLocaleDateString('en-AU', {...melb, weekday:'long', day:'numeric', month:'long', year:'numeric'});
-document.getElementById('entry-date').value = now.toISOString().split('T')[0];
-
-// Data
-let week = JSON.parse(localStorage.getItem('timelatch_week') || '{}');
-let customJobs = JSON.parse(localStorage.getItem('timelatch_jobs') || '[]');
-let editing = null; // for edit mode
-const wrapper = document.querySelector('.job-location-wrapper');
-const toast = document.getElementById('toast');
-
-function showToast(msg) { toast.textContent = msg; toast.style.opacity = 1; setTimeout(() => toast.style.opacity = 0, 3000); }
-function save() { localStorage.setItem('timelatch_week', JSON.stringify(week)); }
-function saveJobs() { localStorage.setItem('timelatch_jobs', JSON.stringify(customJobs)); renderJobs(); }
-function saveName() { const n = document.getElementById('user-name').value.trim(); if (n) localStorage.setItem('timelatch_name', n); }
-
-// Location detection (unchanged)
-function detectLocation() { /* same as before */ }
-detectLocation(); setInterval(detectLocation, 60000);
-
-// Job selector (unchanged)
-wrapper.addEventListener('change', e => { /* same as before */ });
-function restoreSelect(selected = '') { /* same as before */ }
-function renderJobs() { restoreSelect(document.getElementById('job')?.value); }
-
-// EDIT + DELETE ENTRIES — FULLY RESTORED
-function editEntry(date, index) {
-  editing = {date, index};
-  const e = week[date][index];
-  document.getElementById('entry-date').value = date;
-  const [start, finish] = e.times.split(' – ');
-  document.getElementById('start-time').value = start;
-  document.getElementById('finish-time').value = finish;
-  document.getElementById('notes').value = e.notes;
-  restoreSelect(e.job);
-  document.getElementById('add-btn').textContent = "UPDATE ENTRY";
-  document.getElementById('add-btn').onclick = updateEntry;
-  scrollTo(0, 0);
-  showToast("Editing entry — tap UPDATE when done");
-}
-
-function updateEntry() {
-  if (!editing) return;
-  const {date: oldDate, index} = editing;
-  const newDate = document.getElementById('entry-date').value;
-  const start = document.getElementById('start-time').value || "07:00";
-  const finish = document.getElementById('finish-time').value || "15:30";
-  const notes = document.getElementById('notes').value.trim();
-  const job = document.getElementById('job').value.trim();
-
-  if (!notes || !newDate) return alert("Fill everything!");
-
-  // Delete old entry
-  week[oldDate].splice(index, 1);
-  if (week[oldDate].length === 0) delete week[oldDate];
-
-  // Add updated entry
-  const sM = timeToMins(start), fM = timeToMins(finish);
-  const raw = (fM - sM) / 60;
-  const isSat = new Date(newDate).getDay() === 6;
-  let normal = 0, ot = 0;
-  if (isSat) ot = raw;
-  else {
-    const ds = 7*60, de = 15.5*60;
-    const before = Math.max(0, Math.min(fM, ds) - sM) / 60;
-    const during = Math.max(0, Math.min(fM, de) - Math.max(sM, ds)) / 60;
-    const after = Math.max(0, fM - Math.max(sM, de)) / 60;
-    ot = before + after;
-    normal = during > 0 ? during - 0.5 : 0;
-  }
-  const paid = (normal + ot).toFixed(2);
-  const entry = {times: start + ' – ' + finish, paid, ot: ot.toFixed(2), notes, job};
-
-  if (!week[newDate]) week[newDate] = [];
-  week[newDate].push(entry);
-  save(); render(); resetForm();
-  showToast("Entry updated!");
-}
-
-function deleteEntry(date, index) {
-  if (confirm("Delete this entry?")) {
-    week[date].splice(index, 1);
-    if (week[date].length === 0) delete week[date];
-    save(); render();
-    showToast("Entry deleted");
-  }
-}
-
-function resetForm() {
-  editing = null;
-  document.getElementById('add-btn').textContent = "ADD ENTRY";
-  document.getElementById('add-btn').onclick = addEntry;
-  document.getElementById('notes').value = '';
-}
-
-// Original add entry
-function addEntry() {
-  saveName();
-  const job = document.getElementById('job').value.trim();
-  const notes = document.getElementById('notes').value.trim();
-  const date = document.getElementById('entry-date').value;
-  const start = document.getElementById('start-time').value || "07:00";
-  const finish = document.getElementById('finish-time').value || "15:30";
-
-  if (!notes || !date) return alert("Fill notes & date!");
-
-  const sM = timeToMins(start), fM = timeToMins(finish);
-  const raw = (fM - sM) / 60;
-  const isSat = new Date(date).getDay() === 6;
-  let normal = 0, ot = 0;
-  if (isSat) ot = raw;
-  else {
-    const ds = 7*60, de = 15.5*60;
-    const before = Math.max(0, Math.min(fM, ds) - sM) / 60;
-    const during = Math.max(0, Math.min(fM, de) - Math.max(sM, ds)) / 60;
-    const after = Math.max(0, fM - Math.max(sM, de)) / 60;
-    ot = before + after;
-    normal = during > 0 ? during - 0.5 : 0;
-  }
-  const paid = (normal + ot).toFixed(2);
-  const entry = {times: start + ' – ' + finish, paid, ot: ot.toFixed(2), notes, job};
-  if (!week[date]) week[date] = [];
-  week[date].push(entry); save(); render();
-  document.getElementById('notes').value = '';
-  showToast("Entry added!");
-}
-document.getElementById('add-btn').onclick = addEntry;
-
-// Render with edit/delete buttons
-function render() {
-  let html = '';
-  Object.keys(week).sort().reverse().forEach(d => {
-    const nice = new Date(d + 'T12:00').toLocaleDateString('en-AU', {...melb, weekday:'long', day:'numeric', month:'short'});
-    week[d].forEach((e, i) => {
-      const otText = e.ot > 0 ? ` <span class="ot">(OT: ${e.ot} hrs)</span>` : '';
-      html += `<div class="day" onclick="editEntry('${d}', ${i})">
-        <div class="day-header"><b>${nice} | ${e.job}</b>
-          <button onclick="event.stopPropagation(); deleteEntry('${d}', ${i})">Delete</button>
-        </div>
-        ${e.times} – <b>${e.paid} hrs</b>${otText}
-        <pre>${e.notes}</pre>
-      </div>`;
-    });
-  });
-  document.getElementById('output').innerHTML = html || '<div style="text-align:center;padding:80px;color:#666">No entries yet</div>';
-}
-
-// PDF, particles, install modal — all unchanged and working
-// (same perfect code from last version)
-
-render(); renderJobs();
-</script>
-</body>
-</html>
+  <button class="export-pdf" onclick="exportPDF
