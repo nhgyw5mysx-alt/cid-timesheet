@@ -36,7 +36,7 @@ canvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-even
 .logo-img{width:90px;border-radius:18px;box-shadow:0 0 28px rgba(0,212,255,0.5);animation:pulse 3s infinite}
 @keyframes pulse{0%,100%{box-shadow:0 0 20px rgba(0,212,255,0.4)}50%{box-shadow:0 0 38px rgba(0,212,255,0.7)}}
 h1{font-family:'Exo 2',sans-serif;font-size:40px;font-weight:700;background:linear-gradient(90deg,#00d4ff,#00aaff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-top:12px}
-.today-date{font-family:'Exo 2',sans-serif;font-size:28px;color:#00d4ff;text-align:center;margin:24px 0 32px;text-shadow:0 0 10px rgba(0,212,255,0.4)}
+.today-date{font-family:'Exo 2',font-size:28px;color:#00d4ff;text-align:center;margin:24px 0 32px;text-shadow:0 0 10px rgba(0,212,255,0.4)}
 .section{margin-bottom:28px}.section-title{font-size:26px;color:#00d4ff;text-align:center;margin:16px 0 20px;font-weight:700}
 input,textarea,select{width:100%;padding:18px;background:rgba(255,255,255,0.08);border:1px solid rgba(0,212,255,0.25);border-radius:20px;color:white;font-size:18px;margin:12px 0}
 textarea{height:160px;resize:none}
@@ -154,9 +154,12 @@ function submitEntry() {
   const sM = timeToMins(start), fM = timeToMins(finish);
   const raw = (fM - sM) / 60;
   const isSat = new Date(date).getDay() === 6;
+  const isSunday = new Date(date).getDay() === 0;
+  const isWeekend = isSat || isSunday;
   let normal = 0, ot = 0;
-  if (isSat) ot = raw;
-  else {
+  if (isWeekend) {
+    ot = raw;
+  } else {
     const ds = 7*60, de = 15.5*60;
     const before = Math.max(0, Math.min(fM, ds) - sM) / 60;
     const during = Math.max(0, Math.min(fM, de) - Math.max(sM, ds)) / 60;
@@ -216,9 +219,12 @@ function deleteEntry(date, index) {
 function render() {
   let html = '';
   Object.keys(week).sort().reverse().forEach(d => {
-    const nice = new Date(d + 'T12:00').toLocaleDateString('en-AU', {...melb, weekday:'long', day:'numeric', month:'short'});
+    const dayObj = new Date(d + 'T12:00');
+    const nice = dayObj.toLocaleDateString('en-AU', {...melb, weekday:'long', day:'numeric', month:'short'});
+    const isSunday = dayObj.getDay() === 0;
     week[d].forEach((e, i) => {
-      const otText = e.ot > 0 ? ` <span class="ot">(OT: ${e.ot} hrs)</span>` : '';
+      const otLabel = isSunday ? 'Double Time & Half' : 'OT';
+      const otText = e.ot > 0 ? ` <span class="ot">(${otLabel}: ${e.ot} hrs)</span>` : '';
       html += `<div class="day" onclick="editEntry('${d}', ${i})">
         <div class="day-header"><b>${nice} | ${e.job}</b>
           <button onclick="deleteEntry('${d}', ${i})">Delete</button>
@@ -239,9 +245,12 @@ async function exportPDF() {
 
   let rows = '';
   Object.keys(week).sort().reverse().forEach(date => {
-    const nice = new Date(date + 'T12:00').toLocaleDateString('en-AU', {weekday:'long', day:'numeric', month:'short'});
+    const dayObj = new Date(date + 'T12:00');
+    const nice = dayObj.toLocaleDateString('en-AU', {weekday:'long', day:'numeric', month:'short'});
+    const isSunday = dayObj.getDay() === 0;
+    const ot_label = isSunday ? 'Double Time & Half' : 'OT';
     week[date].forEach(e => {
-      rows += `<tr><td>${nice}</td><td>${e.job}</td><td>${e.times}</td><td>${e.paid} hrs${e.ot>0?' (OT: '+e.ot+')':''}</td><td>${e.notes.replace(/\n/g,'<br>')}</td></tr>`;
+      rows += `<tr><td>${nice}</td><td>${e.job}</td><td>${e.times}</td><td>${e.paid} hrs${e.ot>0?' ('+ot_label+': '+e.ot+')':''}</td><td>${e.notes.replace(/\n/g,'<br>')}</td></tr>`;
     });
   });
   document.getElementById('pdf-body').innerHTML = rows || '<tr><td colspan="5">No entries</td></tr>';
