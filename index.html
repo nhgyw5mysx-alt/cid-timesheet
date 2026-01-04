@@ -151,22 +151,43 @@ function submitEntry() {
 
   if (!notes || !date) return alert("Please fill notes and date!");
 
-  const sM = timeToMins(start), fM = timeToMins(finish);
-  const raw = (fM - sM) / 60;
-  const isSat = new Date(date).getDay() === 6;
-  const isSunday = new Date(date).getDay() === 0;
-  const isWeekend = isSat || isSunday;
-  let normal = 0, ot = 0;
+  const sM = timeToMins(start);
+  const fM = timeToMins(finish);
+  const rawHours = (fM - sM) / 60;
+
+  const dayObj = new Date(date);
+  const isSat = dayObj.getDay() === 6;
+  const isSun = dayObj.getDay() === 0;
+  const isWeekend = isSat || isSun;
+
+  let normal = 0;
+  let ot = 0;
+
   if (isWeekend) {
-    ot = raw;
+    // Weekend = all overtime
+    ot = rawHours;
   } else {
-    const ds = 7*60, de = 15.5*60;
-    const before = Math.max(0, Math.min(fM, ds) - sM) / 60;
-    const during = Math.max(0, Math.min(fM, de) - Math.max(sM, ds)) / 60;
-    const after = Math.max(0, fM - Math.max(sM, de)) / 60;
-    ot = before + after;
-    normal = during > 0 ? during - 0.5 : 0;
+    // Weekday
+    const dayStartMins = 7 * 60;      // 07:00
+    const dayEndMins   = 15.5 * 60;  // 15:30
+
+    const beforeOT = Math.max(0, Math.min(fM, dayStartMins) - sM) / 60;           // work before 07:00
+    const afterOT  = Math.max(0, fM - Math.max(sM, dayEndMins)) / 60;            // work after 15:30
+    const totalOT  = beforeOT + afterOT;
+
+    const coreHours = Math.max(0, Math.min(fM, dayEndMins) - Math.max(sM, dayStartMins)) / 60;
+
+    ot = totalOT;
+
+    if (totalOT > 0) {
+      // Overtime worked → lunch break is waived, all core hours are paid
+      normal = coreHours;
+    } else {
+      // No overtime → standard 30-minute unpaid lunch
+      normal = coreHours > 0 ? coreHours - 0.5 : 0;
+    }
   }
+
   const paid = (normal + ot).toFixed(2);
   const entry = {times: start + ' – ' + finish, paid, ot: ot.toFixed(2), notes, job};
 
@@ -183,7 +204,8 @@ function submitEntry() {
 
   if (!week[date]) week[date] = [];
   week[date].push(entry);
-  save(); render();
+  save();
+  render();
   document.getElementById('notes').value = '';
 }
 addBtn.onclick = submitEntry;
@@ -237,7 +259,7 @@ function render() {
   document.getElementById('output').innerHTML = html || '<div style="text-align:center;padding:80px;color:#666">No entries yet</div>';
 }
 
-// PDF export — 100% working
+// PDF export
 async function exportPDF() {
   saveName();
   const name = document.getElementById('user-name').value.trim() || 'Worker';
@@ -271,8 +293,7 @@ function deleteAll() {
   if (confirm('Delete EVERYTHING forever?')) { week = {}; save(); render(); showToast("All deleted"); }
 }
 
-// Job selector, location detection, particles, install modal — all 100% working (same as last perfect version)
-
+// Job selector
 wrapper.addEventListener('change', e => {
   if (e.target.value === 'other') {
     wrapper.innerHTML = `<input type="text" id="job" placeholder="New location…" style="width:100%;padding:18px;background:rgba(255,255,255,0.08);border:1px solid rgba(0,212,255,0.25);border-radius:20px;color:white;font-size:18px">`;
@@ -295,7 +316,7 @@ function restoreSelect(selected = '') {
 }
 function renderJobs() { restoreSelect(document.getElementById('job')?.value || ''); }
 
-// Init everything
+// Init
 render(); renderJobs();
 
 // Particles
@@ -317,7 +338,7 @@ function animate() {
 }
 animate();
 
-// Install modal & offline banner (working)
+// Install modal & offline banner
 if (!localStorage.getItem('timelatch_installed')) setTimeout(() => document.getElementById('install-modal').classList.add('show'), 1200);
 document.getElementById('install-btn').onclick = () => { alert('Tap Share → "Add to Home Screen" → Add'); localStorage.setItem('timelatch_installed', 'true'); document.getElementById('install-modal').classList.remove('show'); };
 document.getElementById('close-install').onclick = () => { localStorage.setItem('timelatch_installed', 'true'); document.getElementById('install-modal').classList.remove('show'); };
