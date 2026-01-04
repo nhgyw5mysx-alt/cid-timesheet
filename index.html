@@ -141,7 +141,7 @@ function timeToMins(t) {
   return h * 60 + m;
 }
 
-// Main entry submission with corrected OT + lunch logic
+// Reverted to original calculation logic (lunch waived only when OT worked)
 function submitEntry() {
   saveName();
   const job = document.getElementById('job').value.trim();
@@ -165,12 +165,10 @@ function submitEntry() {
   let ot = 0;
 
   if (isWeekend) {
-    // All weekend hours = overtime
     ot = rawHours;
   } else {
-    // Weekday
-    const dayStartMins = 7 * 60;     // 07:00
-    const dayEndMins   = 15.5 * 60;  // 15:30
+    const dayStartMins = 7 * 60;
+    const dayEndMins   = 15.5 * 60;
 
     const beforeOT = Math.max(0, Math.min(fM, dayStartMins) - sM) / 60;
     const afterOT  = Math.max(0, fM - Math.max(sM, dayEndMins)) / 60;
@@ -178,14 +176,14 @@ function submitEntry() {
 
     const coreHours = Math.max(0, Math.min(fM, dayEndMins) - Math.max(sM, dayStartMins)) / 60;
 
+    ot = totalOT;
+
     if (totalOT > 0) {
-      // Any overtime → lunch waived → full core paid as normal, extra as OT
+      // Overtime worked → lunch waived, full core paid as normal
       normal = coreHours;
-      ot = totalOT;
     } else {
-      // No overtime → deduct 30 min unpaid lunch
+      // No OT → deduct 0.5 unpaid lunch
       normal = coreHours > 0 ? coreHours - 0.5 : 0;
-      ot = 0;
     }
   }
 
@@ -211,7 +209,7 @@ function submitEntry() {
 }
 addBtn.onclick = submitEntry;
 
-// Edit and delete
+// Edit and delete (unchanged)
 function editEntry(date, index) {
   event.stopPropagation();
   editing = {date, index};
@@ -238,7 +236,6 @@ function deleteEntry(date, index) {
   }
 }
 
-// Render entries
 function render() {
   let html = '';
   Object.keys(week).sort().reverse().forEach(d => {
@@ -260,7 +257,7 @@ function render() {
   document.getElementById('output').innerHTML = html || '<div style="text-align:center;padding:80px;color:#666">No entries yet</div>';
 }
 
-// PDF Export - Multi-page, clean layout
+// Improved PDF Export - better notes handling
 async function exportPDF() {
   saveName();
   const name = document.getElementById('user-name').value.trim() || 'Worker';
@@ -271,7 +268,6 @@ async function exportPDF() {
   const pageWidth = pdf.internal.pageSize.getWidth();
   const pageHeight = pdf.internal.pageSize.getHeight();
   const margin = 15;
-  const contentWidth = pageWidth - 2 * margin;
   let y = margin + 10;
 
   function addHeader() {
@@ -284,13 +280,13 @@ async function exportPDF() {
 
     pdf.setFontSize(12);
     pdf.setFillColor(0, 212, 255);
-    pdf.rect(margin, y - 5, contentWidth, 8, 'F');
+    pdf.rect(margin, y - 5, pageWidth - 2*margin, 8, 'F');
     pdf.setTextColor(255, 255, 255);
     pdf.text('Date', margin + 3, y);
-    pdf.text('Location', margin + 35, y);
-    pdf.text('Time', margin + 80, y);
-    pdf.text('Hours', margin + 115, y);
-    pdf.text('Notes', margin + 145, y);
+    pdf.text('Location', margin + 30, y);
+    pdf.text('Time', margin + 70, y);
+    pdf.text('Hours', margin + 100, y);
+    pdf.text('Notes', margin + 130, y);
     pdf.setTextColor(0, 0, 0);
     y += 10;
   }
@@ -316,23 +312,26 @@ async function exportPDF() {
   }
 
   pdf.setFontSize(10);
+  const lineHeight = 5;
 
   rows.forEach(row => {
-    const notesLines = pdf.splitTextToSize(row[4], 55);
-    const rowHeight = Math.max(6, notesLines.length * 5);
+    // Split notes into lines for proper multi-line display
+    const notesLines = pdf.splitTextToSize(row[4].replace(/\\n/g, '\n'), 65);
 
-    if (y + rowHeight + 10 > pageHeight - margin) {
+    const rowHeight = Math.max(8, notesLines.length * lineHeight + 4);
+
+    if (y + rowHeight > pageHeight - margin) {
       pdf.addPage();
       addHeader();
     }
 
     pdf.text(row[0], margin + 3, y);
-    pdf.text(row[1], margin + 35, y);
-    pdf.text(row[2], margin + 80, y);
-    pdf.text(row[3], margin + 115, y);
-    pdf.text(notesLines, margin + 145, y);
+    pdf.text(row[1], margin + 30, y);
+    pdf.text(row[2], margin + 70, y);
+    pdf.text(row[3], margin + 100, y);
+    pdf.text(notesLines, margin + 130, y);
 
-    y += rowHeight + 4;
+    y += rowHeight;
   });
 
   pdf.save(`Timesheet_${name}_${now.toISOString().slice(0,10)}.pdf`);
@@ -348,7 +347,7 @@ function deleteAll() {
   }
 }
 
-// Job location selector
+// Job selector (unchanged)
 wrapper.addEventListener('change', e => {
   if (e.target.value === 'other') {
     wrapper.innerHTML = `<input type="text" id="job" placeholder="New location…" style="width:100%;padding:18px;background:rgba(255,255,255,0.08);border:1px solid rgba(0,212,255,0.25);border-radius:20px;color:white;font-size:18px">`;
@@ -386,7 +385,7 @@ function renderJobs() {
 render();
 renderJobs();
 
-// Particles background
+// Particles & install (unchanged)
 const canvas = document.getElementById('particles');
 const ctx = canvas.getContext('2d');
 function resize() { canvas.width = innerWidth; canvas.height = innerHeight; }
@@ -417,7 +416,6 @@ function animate() {
 }
 animate();
 
-// Install prompt & offline banner
 if (!localStorage.getItem('timelatch_installed')) {
   setTimeout(() => document.getElementById('install-modal').classList.add('show'), 1200);
 }
