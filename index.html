@@ -178,22 +178,20 @@ function submitEntry() {
   if (!notes || !date) return alert("Please fill notes and date!");
 
   const dayObj = new Date(date);
-  const weekday = dayObj.getDay();
+  const weekday = dayObj.getDay(); // 0=Sun, 1-5=Mon-Fri, 6=Sat
   const isSaturday = weekday === 6;
   const isSunday = weekday === 0;
-  const isWeekday = !isSaturday && !isSunday;
-
-  let hoursWorked = 0;
-  let otLabel = '';
+  const isWeekday = weekday >= 1 && weekday <= 5;
 
   const sM = timeToMins(start);
   const fM = timeToMins(finish);
-  hoursWorked = ((fM - sM + (fM < sM ? 1440 : 0)) / 60).toFixed(2);
+  let hoursWorked = ((fM >= sM ? fM - sM : fM - sM + 1440) / 60).toFixed(2);
+
+  let otLabel = '';
 
   if (is12hr) {
-    // Enforce ~12 hours
     if (Math.abs(parseFloat(hoursWorked) - 12) > 1) {
-      showToast("Adjusted to 12-hour shift");
+      showToast("Adjusted finish to 12-hour shift");
       updateFinishTime(start);
       finish = document.getElementById('finish-time').value;
       hoursWorked = '12.00';
@@ -202,9 +200,15 @@ function submitEntry() {
     const isNight = sM >= timeToMins('18:00');
 
     if (isWeekday) {
-      otLabel = isNight ? 'Night OT/OTT' : 'OT';
-    } else {
-      otLabel = isSunday ? 'OTT' : 'OT/OTT';
+      if (isNight) {
+        otLabel = '3.5 OT + 8.5 OTT';
+      } else {
+        otLabel = '8 normal + 4 OT';
+      }
+    } else if (isSaturday) {
+      otLabel = 'all OT';
+    } else { // Sunday or assumed public holiday
+      otLabel = 'all OTT';
     }
   } else {
     // Original non-12hr logic
@@ -237,11 +241,10 @@ function submitEntry() {
   const entry = {
     times: start + ' – ' + finish,
     paid: hoursWorked,
-    ot: otLabel ? hoursWorked : '0.00',  // only show OT if label present
+    otLabel,
     notes,
     job,
-    is12hr,
-    otLabel
+    is12hr
   };
 
   if (editing) {
@@ -263,7 +266,41 @@ function submitEntry() {
 }
 addBtn.onclick = submitEntry;
 
-// Edit / Delete functions unchanged (keep from previous version)
+function editEntry(date, index) {
+  event.stopPropagation();
+  editing = {date, index};
+  const e = week[date][index];
+  document.getElementById('entry-date').value = date;
+  const [s, f] = e.times.split(' – ');
+  document.getElementById('start-time').value = s;
+  document.getElementById('finish-time').value = f;
+  document.getElementById('notes').value = e.notes;
+  twelveMode.checked = !!e.is12hr;
+  restoreSelect(e.job);
+  addBtn.textContent = "UPDATE ENTRY";
+  window.scrollTo(0, 0);
+  showToast("Now editing — tap UPDATE when done");
+}
+
+function deleteEntry(date, index) {
+  event.stopPropagation(); // prevent parent click
+  if (confirm("Delete this entry?")) {
+    week[date].splice(index, 1);
+    if (week[date]?.length === 0) delete week[date];
+    save();
+    render();
+    showToast("Deleted");
+  }
+}
+
+function deleteAll() {
+  if (confirm('Delete EVERYTHING forever?')) {
+    week = {};
+    save();
+    render();
+    showToast("All deleted");
+  }
+}
 
 function render() {
   let html = '';
@@ -271,15 +308,13 @@ function render() {
     const dayObj = new Date(d + 'T12:00');
     const nice = dayObj.toLocaleDateString('en-AU', {weekday:'long', day:'numeric', month:'short'});
     week[d].forEach((e, i) => {
-      let displayText = `${e.times} – <b>${e.paid} hrs</b>`;
-      if (e.otLabel) {
-        displayText += ` <span class="ot">(${e.otLabel})</span>`;
-      }
+      let hoursDisplay = `${e.paid} hrs`;
+      if (e.otLabel) hoursDisplay += ` <span class="ot">(${e.otLabel})</span>`;
       html += `<div class="day" onclick="editEntry('${d}', ${i})">
         <div class="day-header"><b>${nice} | ${e.job}</b>
           <button onclick="deleteEntry('${d}', ${i})">Delete</button>
         </div>
-        ${displayText}
+        ${e.times} – ${hoursDisplay}
         <pre>${e.notes}</pre>
       </div>`;
     });
@@ -287,7 +322,7 @@ function render() {
   document.getElementById('output').innerHTML = html || '<div style="text-align:center;padding:80px;color:#666">No entries yet</div>';
 }
 
-// PDF export - updated to match new display style
+// PDF export (updated to show the label cleanly)
 async function exportPDF() {
   saveName();
   const name = document.getElementById('user-name').value.trim() || 'Worker';
@@ -300,7 +335,7 @@ async function exportPDF() {
   let y = margin + 10;
 
   const colX = [margin + 3, margin + 30, margin + 70, margin + 100, margin + 130];
-  const colWidths = colX.slice(1).map((x,i) => x - colX[i]).concat(pageWidth - margin - colX[4]);
+  const colWidths = [27, 40, 30, 40, pageWidth - margin - 130];
 
   function addHeader() {
     pdf.setFontSize(22);
@@ -365,9 +400,51 @@ async function exportPDF() {
   showToast("PDF exported!");
 }
 
-// Keep deleteAll, job selector, particles, install modal, etc. from your previous working version
-// (just replace the <script> content above with this one)
+function deleteAll() {
+  if (confirm('Delete EVERYTHING forever?')) {
+    week = {};
+    localStorage.removeItem('timelatch_week');
+    save();
+    render();
+    showToast("All deleted");
+  }
+}
 
+// Job selector logic (unchanged)
+wrapper.addEventListener('change', e => {
+  if (e.target.value === 'other') {
+    wrapper.innerHTML = `<input type="text" id="job" placeholder="New location…" style="width:100%;padding:18px;background:rgba(255,255,255,0.08);border:1px solid rgba(0,212,255,0.25);border-radius:20px;color:white;font-size:18px">`;
+    const input = document.getElementById('job');
+    input.focus();
+    input.addEventListener('keydown', ev => {
+      if (ev.key === 'Enter') {
+        const v = input.value.trim();
+        if (v && !customJobs.includes(v)) {
+          customJobs.unshift(v);
+          saveJobs();
+        }
+        restoreSelect(v || '');
+      }
+    });
+  }
+});
+
+function restoreSelect(selected = '') {
+  let html = `<select id="job">
+    <option value="CSL Broadmeadows">CSL Broadmeadows</option>
+    <option value="CSL Tullamarine">CSL Tullamarine</option>
+    <option value="CSL Melbourne">CSL Melbourne</option>`;
+  customJobs.forEach(j => html += `<option value="${j}">${j}</option>`);
+  html += `<option value="other">+ Add New Location</option></select>`;
+  wrapper.innerHTML = html;
+  if (selected) document.getElementById('job').value = selected;
+}
+
+function renderJobs() {
+  restoreSelect(document.getElementById('job')?.value || '');
+}
+
+// Particles, install modal, offline banner (keep your original if customized)
 render();
 renderJobs();
 </script>
