@@ -18,7 +18,7 @@
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0a0e1a;color:white;min-height:100vh;overflow-x:hidden;position:relative}
 canvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none}
-.app{max-width:500px;margin:0 auto;position:relative;z-index:1;padding:20px 16px 140px}
+.app{max-width:500px;margin:0 auto;position:relative;z-index:1;padding:20px 16px 160px}
 
 #offline-banner{position:fixed;top:0;left:0;right:0;background:#ff3b5c;color:white;text-align:center;padding:10px;font-size:14px;z-index:999;transform:translateY(-100%);transition:transform .3s}
 #offline-banner.show{transform:translateY(0)}
@@ -56,6 +56,7 @@ button{width:100%;padding:20px;background:#00d4ff;color:#0a0e1a;border:none;bord
 #toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:rgba(0,212,255,0.95);color:#000;padding:16px 32px;border-radius:50px;font-weight:bold;z-index:9999;opacity:0;transition:opacity .4s}
 .checkbox-wrapper {display:flex;align-items:center;justify-content:center;margin:15px 0;font-size:18px;}
 .checkbox-wrapper input {width:24px;height:24px;margin-right:12px;accent-color:#00d4ff;}
+.total-earnings {font-size:20px;font-weight:bold;color:#00ff9d;text-align:center;margin:20px 0;padding:15px;background:rgba(0,255,157,0.1);border-radius:16px;border:1px solid rgba(0,255,157,0.3);}
 </style>
 </head>
 <body>
@@ -75,7 +76,13 @@ button{width:100%;padding:20px;background:#00d4ff;color:#0a0e1a;border:none;bord
 <div class="app">
   <div class="header"><img src="IMG_2776.jpeg" alt="Logo" class="logo-img"><h1>TimeLatch</h1></div>
   <div class="today-date" id="today-date"></div>
+
   <div class="section"><div class="section-title">Your Name</div><input type="text" id="user-name" placeholder="e.g. Daniel"></div>
+
+  <div class="section">
+    <div class="section-title">Hourly Rate</div>
+    <input type="number" id="hourly-rate" placeholder="e.g. 45.50" step="0.01" min="0">
+  </div>
   
   <div class="section">
     <div class="time-inputs">
@@ -119,11 +126,20 @@ document.getElementById('entry-date').value = now.toISOString().split('T')[0];
 // Load saved data
 let week = JSON.parse(localStorage.getItem('timelatch_week') || '{}');
 let customJobs = JSON.parse(localStorage.getItem('timelatch_jobs') || '[]');
+let hourlyRate = parseFloat(localStorage.getItem('timelatch_rate')) || 0;
+document.getElementById('hourly-rate').value = hourlyRate || '';
 let editing = null;
 const wrapper = document.querySelector('.job-location-wrapper');
 const toast = document.getElementById('toast');
 const addBtn = document.getElementById('add-btn');
 const twelveMode = document.getElementById('twelve-hour-mode');
+
+// Save rate on change
+document.getElementById('hourly-rate').addEventListener('input', e => {
+  hourlyRate = parseFloat(e.target.value) || 0;
+  localStorage.setItem('timelatch_rate', hourlyRate);
+  render(); // refresh earnings display
+});
 
 // Restore saved name
 if (localStorage.getItem('timelatch_name')) {
@@ -178,7 +194,7 @@ function submitEntry() {
   if (!notes || !date) return alert("Please fill notes and date!");
 
   const dayObj = new Date(date);
-  const weekday = dayObj.getDay(); // 0=Sun, 1-5=Mon-Fri, 6=Sat
+  const weekday = dayObj.getDay();
   const isSaturday = weekday === 6;
   const isSunday = weekday === 0;
   const isWeekday = weekday >= 1 && weekday <= 5;
@@ -207,11 +223,10 @@ function submitEntry() {
       }
     } else if (isSaturday) {
       otLabel = 'all OT';
-    } else { // Sunday or assumed public holiday
+    } else {
       otLabel = 'all OTT';
     }
   } else {
-    // Original non-12hr logic
     let normal = 0;
     let ot = 0;
 
@@ -283,7 +298,7 @@ function editEntry(date, index) {
 }
 
 function deleteEntry(date, index) {
-  event.stopPropagation(); // prevent parent click
+  event.stopPropagation();
   if (confirm("Delete this entry?")) {
     week[date].splice(index, 1);
     if (week[date]?.length === 0) delete week[date];
@@ -296,6 +311,7 @@ function deleteEntry(date, index) {
 function deleteAll() {
   if (confirm('Delete EVERYTHING forever?')) {
     week = {};
+    localStorage.removeItem('timelatch_week');
     save();
     render();
     showToast("All deleted");
@@ -304,12 +320,20 @@ function deleteAll() {
 
 function render() {
   let html = '';
+  let totalPaidHours = 0;
+
   Object.keys(week).sort((a,b) => b.localeCompare(a)).forEach(d => {
     const dayObj = new Date(d + 'T12:00');
     const nice = dayObj.toLocaleDateString('en-AU', {weekday:'long', day:'numeric', month:'short'});
     week[d].forEach((e, i) => {
+      const paidNum = parseFloat(e.paid) || 0;
+      totalPaidHours += paidNum;
+      const earnings = paidNum * hourlyRate;
       let hoursDisplay = `${e.paid} hrs`;
       if (e.otLabel) hoursDisplay += ` <span class="ot">(${e.otLabel})</span>`;
+      if (hourlyRate > 0) {
+        hoursDisplay += ` → $${earnings.toFixed(2)}`;
+      }
       html += `<div class="day" onclick="editEntry('${d}', ${i})">
         <div class="day-header"><b>${nice} | ${e.job}</b>
           <button onclick="deleteEntry('${d}', ${i})">Delete</button>
@@ -319,10 +343,15 @@ function render() {
       </div>`;
     });
   });
+
+  if (Object.keys(week).length > 0 && hourlyRate > 0) {
+    const totalEarnings = (totalPaidHours * hourlyRate).toFixed(2);
+    html += `<div class="total-earnings">Total earnings this week: $${totalEarnings}</div>`;
+  }
+
   document.getElementById('output').innerHTML = html || '<div style="text-align:center;padding:80px;color:#666">No entries yet</div>';
 }
 
-// PDF export (updated to show the label cleanly)
 async function exportPDF() {
   saveName();
   const name = document.getElementById('user-name').value.trim() || 'Worker';
@@ -331,30 +360,36 @@ async function exportPDF() {
 
   const pageWidth = pdf.internal.pageSize.getWidth();
   const pageHeight = pdf.internal.pageSize.getHeight();
-  const margin = 15;
-  let y = margin + 10;
+  const margin = 12;
+  let y = margin + 8;
 
-  const colX = [margin + 3, margin + 30, margin + 70, margin + 100, margin + 130];
-  const colWidths = [27, 40, 30, 40, pageWidth - margin - 130];
+  const colX = [margin + 2, margin + 28, margin + 65, margin + 105, margin + 145];
+  const colWidths = [
+    colX[1] - colX[0],
+    colX[2] - colX[1],
+    colX[3] - colX[2],
+    colX[4] - colX[3],
+    pageWidth - margin - colX[4]
+  ];
 
   function addHeader() {
-    pdf.setFontSize(22);
+    pdf.setFontSize(20);
     pdf.text('TimeLatch Timesheet', pageWidth / 2, y, { align: 'center' });
-    y += 10;
-    pdf.setFontSize(16);
+    y += 9;
+    pdf.setFontSize(15);
     pdf.text(name, pageWidth / 2, y, { align: 'center' });
-    y += 15;
+    y += 14;
 
-    pdf.setFontSize(12);
+    pdf.setFontSize(11);
     pdf.setFillColor(0, 212, 255);
-    pdf.rect(margin, y - 5, pageWidth - 2*margin, 8, 'F');
-    pdf.setTextColor(255);
-    pdf.text('Date', colX[0], y);
-    pdf.text('Location', colX[1], y);
-    pdf.text('Time', colX[2], y);
-    pdf.text('Hours', colX[3], y);
-    pdf.text('Notes', colX[4], y);
-    pdf.setTextColor(0);
+    pdf.rect(margin, y - 4, pageWidth - 2*margin, 7, 'F');
+    pdf.setTextColor(255, 255, 255);
+    pdf.text('Date', colX[0], y + 1);
+    pdf.text('Location', colX[1], y + 1);
+    pdf.text('Time', colX[2], y + 1);
+    pdf.text('Hours', colX[3], y + 1);
+    pdf.text('Notes', colX[4], y + 1);
+    pdf.setTextColor(0, 0, 0);
     y += 10;
   }
 
@@ -371,46 +406,46 @@ async function exportPDF() {
     });
   });
 
-  if (!rows.length) {
-    pdf.text('No entries', pageWidth / 2, pageHeight / 2, { align: 'center' });
+  if (rows.length === 0) {
+    pdf.setFontSize(14);
+    pdf.text('No entries yet', pageWidth / 2, pageHeight / 2, { align: 'center' });
     pdf.save(`Timesheet_${name}_${now.toISOString().slice(0,10)}.pdf`);
     return;
   }
 
-  pdf.setFontSize(10);
-  pdf.setLineHeightFactor(1.15);
-  const lineHeight = pdf.getFontSize() * pdf.getLineHeightFactor() * 25.4 / 72;
+  pdf.setFontSize(9.5);
+  pdf.setLineHeightFactor(1.25);
 
   rows.forEach(row => {
-    const splitRow = row.map((cell, i) => pdf.splitTextToSize(cell.toString().replace(/\\n/g, '\n'), colWidths[i]));
-    const maxLines = Math.max(...splitRow.map(l => l.length));
-    const rowHeight = maxLines * lineHeight + 4;
+    const splitRow = row.map((cell, i) => {
+      if (i === 3 && cell.length > 30) pdf.setFontSize(8.5);
+      else pdf.setFontSize(9.5);
+      return pdf.splitTextToSize(cell.toString().replace(/\\n/g, '\n'), colWidths[i]);
+    });
 
-    if (y + rowHeight > pageHeight - margin) {
+    const maxLines = Math.max(...splitRow.map(lines => lines.length));
+    const rowHeight = maxLines * 5 + 3;
+
+    if (y + rowHeight > pageHeight - margin - 10) {
       pdf.addPage();
-      y = margin + 10;
+      y = margin + 8;
       addHeader();
     }
 
-    splitRow.forEach((lines, c) => pdf.text(lines, colX[c], y));
+    for (let c = 0; c < 5; c++) {
+      if (c === 3 && row[c].length > 30) pdf.setFontSize(8.5);
+      else pdf.setFontSize(9.5);
+      pdf.text(splitRow[c], colX[c], y + 3);
+    }
+
     y += rowHeight;
   });
 
   pdf.save(`Timesheet_${name}_${now.toISOString().slice(0,10)}.pdf`);
-  showToast("PDF exported!");
+  showToast("PDF exported successfully!");
 }
 
-function deleteAll() {
-  if (confirm('Delete EVERYTHING forever?')) {
-    week = {};
-    localStorage.removeItem('timelatch_week');
-    save();
-    render();
-    showToast("All deleted");
-  }
-}
-
-// Job selector logic (unchanged)
+// Job selector
 wrapper.addEventListener('change', e => {
   if (e.target.value === 'other') {
     wrapper.innerHTML = `<input type="text" id="job" placeholder="New location…" style="width:100%;padding:18px;background:rgba(255,255,255,0.08);border:1px solid rgba(0,212,255,0.25);border-radius:20px;color:white;font-size:18px">`;
@@ -444,7 +479,6 @@ function renderJobs() {
   restoreSelect(document.getElementById('job')?.value || '');
 }
 
-// Particles, install modal, offline banner (keep your original if customized)
 render();
 renderJobs();
 </script>
