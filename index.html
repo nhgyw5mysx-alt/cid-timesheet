@@ -18,7 +18,7 @@
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0a0e1a;color:white;min-height:100vh;overflow-x:hidden;position:relative}
 canvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none}
-.app{max-width:500px;margin:0 auto;position:relative;z-index:1;padding:20px 16px 140px}
+.app{max-width:500px;margin:0 auto;position:relative;z-index:1;padding:20px 16px 160px}
 
 #offline-banner{position:fixed;top:0;left:0;right:0;background:#ff3b5c;color:white;text-align:center;padding:10px;font-size:14px;z-index:999;transform:translateY(-100%);transition:transform .3s}
 #offline-banner.show{transform:translateY(0)}
@@ -56,6 +56,7 @@ button{width:100%;padding:20px;background:#00d4ff;color:#0a0e1a;border:none;bord
 #toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:rgba(0,212,255,0.95);color:#000;padding:16px 32px;border-radius:50px;font-weight:bold;z-index:9999;opacity:0;transition:opacity .4s}
 .checkbox-wrapper {display:flex;align-items:center;justify-content:center;margin:15px 0;font-size:18px;}
 .checkbox-wrapper input {width:24px;height:24px;margin-right:12px;accent-color:#00d4ff;}
+.total-earnings {font-size:20px;font-weight:bold;color:#00ff9d;text-align:center;margin:20px 0;padding:15px;background:rgba(0,255,157,0.1);border-radius:16px;border:1px solid rgba(0,255,157,0.3);}
 </style>
 </head>
 <body>
@@ -76,12 +77,17 @@ button{width:100%;padding:20px;background:#00d4ff;color:#0a0e1a;border:none;bord
   <div class="header"><img src="IMG_2776.jpeg" alt="Logo" class="logo-img"><h1>TimeLatch</h1></div>
   <div class="today-date" id="today-date"></div>
   <div class="section"><div class="section-title">Your Name</div><input type="text" id="user-name" placeholder="e.g. Daniel"></div>
+  <div class="section"><div class="section-title">Hourly Rate</div><input type="number" id="hourly-rate" placeholder="e.g. 52.5" step="0.01"></div>
   
   <div class="section">
     <div class="time-inputs">
       <div class="time-field"><div>DAY</div><div class="time-box"><input type="date" id="entry-date"></div></div>
       <div class="time-field"><div>START</div><div class="time-box"><input type="time" id="start-time" value="06:00"></div></div>
-      <div class="time-field"><div>FINISH</div><div class="time-box"><input type="time" id="finish-time" value="15:30"></div></div>
+      <div class="time-field"><div>FINISH</div><div class="time-box"><input type="time" id="finish-time" value="18:00"></div></div>
+    </div>
+    <div class="checkbox-wrapper">
+      <input type="checkbox" id="twelve-hour-mode">
+      <label for="twelve-hour-mode">12-hour shift pattern (6am-6pm / 6pm-6am)</label>
     </div>
   </div>
 
@@ -115,15 +121,25 @@ document.getElementById('entry-date').value = now.toISOString().split('T')[0];
 // Load saved data
 let week = JSON.parse(localStorage.getItem('timelatch_week') || '{}');
 let customJobs = JSON.parse(localStorage.getItem('timelatch_jobs') || '[]');
+let hourlyRate = parseFloat(localStorage.getItem('timelatch_rate') || '0');
+document.getElementById('hourly-rate').value = hourlyRate > 0 ? hourlyRate : '';
 let editing = null;
 const wrapper = document.querySelector('.job-location-wrapper');
 const toast = document.getElementById('toast');
 const addBtn = document.getElementById('add-btn');
+const twelveMode = document.getElementById('twelve-hour-mode');
 
 // Restore saved name
 if (localStorage.getItem('timelatch_name')) {
   document.getElementById('user-name').value = localStorage.getItem('timelatch_name');
 }
+
+// Save rate on change
+document.getElementById('hourly-rate').addEventListener('input', (e) => {
+  hourlyRate = parseFloat(e.target.value) || 0;
+  localStorage.setItem('timelatch_rate', hourlyRate);
+  render();
+});
 
 function showToast(msg) {
   toast.textContent = msg;
@@ -143,55 +159,106 @@ function timeToMins(t) {
   return h * 60 + m;
 }
 
-// Reverted to original calculation logic (lunch waived only when OT worked)
+function updateFinishTime(start) {
+  const [h, m] = start.split(':').map(Number);
+  let endH = (h + 12) % 24;
+  const endTime = `${endH.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+  document.getElementById('finish-time').value = endTime;
+}
+
+twelveMode.addEventListener('change', () => {
+  if (twelveMode.checked) {
+    const start = document.getElementById('start-time').value;
+    if (start) updateFinishTime(start);
+  }
+});
+
+document.getElementById('start-time').addEventListener('change', e => {
+  if (twelveMode.checked && e.target.value) updateFinishTime(e.target.value);
+});
+
 function submitEntry() {
   saveName();
   const job = document.getElementById('job').value.trim();
   const notes = document.getElementById('notes').value.trim();
   const date = document.getElementById('entry-date').value;
-  const start = document.getElementById('start-time').value || "07:00";
-  const finish = document.getElementById('finish-time').value || "15:30";
+  let start = document.getElementById('start-time').value || "06:00";
+  let finish = document.getElementById('finish-time').value || "18:00";
+  const is12hr = twelveMode.checked;
 
   if (!notes || !date) return alert("Please fill notes and date!");
 
+  const dayObj = new Date(date);
+  const weekday = dayObj.getDay(); // 0=Sun, 1-5=Mon-Fri, 6=Sat
+  const isSaturday = weekday === 6;
+  const isSunday = weekday === 0;
+  const isWeekday = weekday >= 1 && weekday <= 5;
+
   const sM = timeToMins(start);
   const fM = timeToMins(finish);
-  const rawHours = (fM - sM) / 60;
-
-  const dayObj = new Date(date);
-  const isSat = dayObj.getDay() === 6;
-  const isSun = dayObj.getDay() === 0;
-  const isWeekend = isSat || isSun;
+  const rawHours = (fM - sM + (fM < sM ? 1440 : 0)) / 60;
 
   let normal = 0;
   let ot = 0;
+  let ott = 0;
+  let paid = 0;
+  let otLabel = '';
 
-  if (isWeekend) {
-    ot = rawHours;
-  } else {
-    const dayStartMins = 7 * 60;
-    const dayEndMins   = 15.5 * 60;
-
-    const beforeOT = Math.max(0, Math.min(fM, dayStartMins) - sM) / 60;
-    const afterOT  = Math.max(0, fM - Math.max(sM, dayEndMins)) / 60;
-    const totalOT  = beforeOT + afterOT;
-
-    const coreHours = Math.max(0, Math.min(fM, dayEndMins) - Math.max(sM, dayStartMins)) / 60;
-
-    ot = totalOT;
-
-    if (totalOT > 0) {
-      // Overtime worked → lunch waived, full core paid as normal
-      normal = coreHours;
-    } else {
-      // No OT → deduct 0.5 unpaid lunch
-      normal = coreHours > 0 ? coreHours - 0.5 : 0;
+  if (is12hr) {
+    // Enforce ~12 hours
+    if (Math.abs(rawHours - 12) > 1) {
+      showToast("Adjusted to 12-hour shift");
+      updateFinishTime(start);
+      finish = document.getElementById('finish-time').value;
     }
+
+    const isNight = sM >= timeToMins('18:00');
+
+    if (isWeekday) {
+      if (isNight) {
+        ot = 3.5;
+        ott = 8.5;
+        otLabel = '3.5 OT + 8.5 OTT';
+      } else {
+        normal = 8;
+        ot = 4;
+        otLabel = '8 normal + 4 OT';
+      }
+    } else if (isSaturday) {
+      ot = 12;
+      otLabel = 'all OT';
+    } else { // Sunday or public holiday
+      ott = 12;
+      otLabel = 'all OTT';
+    }
+    paid = (normal + ot + ott).toFixed(2);
+  } else {
+    if (isSaturday || isSunday) {
+      ot = rawHours; // for Sat OT=2x, Sun OTT=2.5x, but since label is OT for Sat, but multiplier different for Sun
+      otLabel = isSunday ? 'Double Time & Half' : 'OT';
+    } else {
+      const dayStartMins = 7 * 60;
+      const dayEndMins   = 15.5 * 60;
+
+      const beforeOT = Math.max(0, Math.min(fM, dayStartMins) - sM) / 60;
+      const afterOT  = Math.max(0, fM - Math.max(sM, dayEndMins)) / 60;
+      const totalOT  = beforeOT + afterOT;
+
+      const coreHours = Math.max(0, Math.min(fM, dayEndMins) - Math.max(sM, dayStartMins)) / 60;
+
+      ot = totalOT;
+
+      if (totalOT > 0) {
+        normal = coreHours;
+      } else {
+        normal = coreHours > 0 ? coreHours - 0.5 : 0;
+      }
+      otLabel = totalOT > 0 ? 'OT' : '';
+    }
+    paid = (normal + ot).toFixed(2);
   }
 
-  const paid = (normal + ot).toFixed(2);
-  const entry = { times: start + ' – ' + finish, paid, ot: ot.toFixed(2), notes, job };
-
+  const entry = { times: start + ' – ' + finish, paid, normal, ot, ott, rawHours: rawHours.toFixed(2), otLabel, notes, job, is12hr, isSaturday, isSunday };
   if (editing) {
     const {date: oldDate, index} = editing;
     week[oldDate].splice(index, 1);
@@ -211,6 +278,48 @@ function submitEntry() {
 }
 addBtn.onclick = submitEntry;
 
+function calculateEarnings(entry, rate) {
+  if (rate <= 0) return 0;
+
+  if (entry.is12hr) {
+    return (entry.normal * rate + entry.ot * 2 * rate + entry.ott * 2.5 * rate);
+  } else {
+    if (entry.isSunday) {
+      return entry.rawHours * 2.5 * rate;
+    } else if (entry.isSaturday) {
+      return entry.rawHours * 2 * rate;
+    } else {
+      return entry.normal * rate + entry.ot * 2 * rate;
+    }
+  }
+}
+
+function render() {
+  let html = '';
+  let totalEarnings = 0;
+  Object.keys(week).sort().reverse().forEach(d => {
+    const dayObj = new Date(d + 'T12:00');
+    const nice = dayObj.toLocaleDateString('en-AU', {weekday:'long', day:'numeric', month:'short'});
+    const isSunday = dayObj.getDay() === 0;
+    week[d].forEach((e, i) => {
+      const earnings = calculateEarnings(e, hourlyRate);
+      totalEarnings += earnings;
+      const otText = e.otLabel ? ` <span class="ot">(${e.otLabel})</span>` : '';
+      let display = `${e.times} – <b>${e.paid} hrs</b>${otText}`;
+      if (hourlyRate > 0 && earnings > 0) display += ` → $${earnings.toFixed(2)}`;
+      html += `<div class="day" onclick="editEntry('${d}', ${i})">
+        <div class="day-header"><b>${nice} | ${e.job}</b>
+          <button onclick="deleteEntry('${d}', ${i})">Delete</button>
+        </div>
+        ${display}
+        <pre>${e.notes}</pre>
+      </div>`;
+    });
+  });
+  if (html) html += `<div class="total-earnings">Total earnings this week: $${totalEarnings.toFixed(2)}</div>`;
+  document.getElementById('output').innerHTML = html || '<div style="text-align:center;padding:80px;color:#666">No entries yet</div>';
+}
+
 // Edit and delete (unchanged)
 function editEntry(date, index) {
   event.stopPropagation();
@@ -221,6 +330,7 @@ function editEntry(date, index) {
   document.getElementById('start-time').value = start;
   document.getElementById('finish-time').value = finish;
   document.getElementById('notes').value = e.notes;
+  twelveMode.checked = e.is12hr;
   restoreSelect(e.job);
   addBtn.textContent = "UPDATE ENTRY";
   window.scrollTo(0, 0);
@@ -238,25 +348,13 @@ function deleteEntry(date, index) {
   }
 }
 
-function render() {
-  let html = '';
-  Object.keys(week).sort().reverse().forEach(d => {
-    const dayObj = new Date(d + 'T12:00');
-    const nice = dayObj.toLocaleDateString('en-AU', {weekday:'long', day:'numeric', month:'short'});
-    const isSunday = dayObj.getDay() === 0;
-    week[d].forEach((e, i) => {
-      const otLabel = isSunday ? 'Double Time & Half' : 'OT';
-      const otText = e.ot > 0 ? ` <span class="ot">(${otLabel}: ${e.ot} hrs)</span>` : '';
-      html += `<div class="day" onclick="editEntry('${d}', ${i})">
-        <div class="day-header"><b>${nice} | ${e.job}</b>
-          <button onclick="deleteEntry('${d}', ${i})">Delete</button>
-        </div>
-        ${e.times} – <b>${e.paid} hrs</b>${otText}
-        <pre>${e.notes}</pre>
-      </div>`;
-    });
-  });
-  document.getElementById('output').innerHTML = html || '<div style="text-align:center;padding:80px;color:#666">No entries yet</div>';
+function deleteAll() {
+  if (confirm('Delete EVERYTHING forever?')) {
+    week = {};
+    save();
+    render();
+    showToast("All deleted");
+  }
 }
 
 // Improved PDF Export - better notes handling
@@ -436,3 +534,4 @@ window.addEventListener('offline', () => document.getElementById('offline-banner
 </script>
 </body>
 </html>
+``` Enforce
