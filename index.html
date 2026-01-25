@@ -89,6 +89,10 @@ button{width:100%;padding:20px;background:#00d4ff;color:#0a0e1a;border:none;bord
       <input type="checkbox" id="twelve-hour-mode">
       <label for="twelve-hour-mode">12-hour shift pattern (6am-6pm / 6pm-6am)</label>
     </div>
+    <div class="checkbox-wrapper">
+      <input type="checkbox" id="public-holiday">
+      <label for="public-holiday">Public Holiday (applies 2.5× rate)</label>
+    </div>
   </div>
 
   <div class="section"><div class="section-title">Job Location</div>
@@ -128,6 +132,7 @@ const wrapper = document.querySelector('.job-location-wrapper');
 const toast = document.getElementById('toast');
 const addBtn = document.getElementById('add-btn');
 const twelveMode = document.getElementById('twelve-hour-mode');
+const publicHoliday = document.getElementById('public-holiday');
 
 // Save rate on change
 document.getElementById('hourly-rate').addEventListener('input', (e) => {
@@ -185,6 +190,7 @@ function submitEntry() {
   let start = document.getElementById('start-time').value || "06:00";
   let finish = document.getElementById('finish-time').value || "18:00";
   const is12hr = twelveMode.checked;
+  const isPublicHoliday = publicHoliday.checked;
 
   if (!notes || !date) return alert("Please fill notes and date!");
 
@@ -266,7 +272,8 @@ function submitEntry() {
     job,
     is12hr,
     isSaturday,
-    isSunday
+    isSunday,
+    isPublicHoliday
   };
 
   if (editing) {
@@ -284,12 +291,20 @@ function submitEntry() {
   week[date].push(entry);
   save();
   render();
+
+  // Reset inputs
   document.getElementById('notes').value = '';
+  publicHoliday.checked = false;
 }
 addBtn.onclick = submitEntry;
 
 function calculateEarnings(entry, rate) {
   if (rate <= 0) return 0;
+
+  // Public holiday takes highest priority (2.5× on total paid hours)
+  if (entry.isPublicHoliday) {
+    return parseFloat(entry.paid) * 2.5 * rate;
+  }
 
   if (entry.is12hr) {
     return (entry.normal * rate) + (entry.ot * 2 * rate) + (entry.ott * 2.5 * rate);
@@ -315,7 +330,11 @@ function render() {
       const earnings = calculateEarnings(e, hourlyRate);
       totalEarnings += earnings;
       let display = `${e.times} – <b>${e.paid} hrs</b>`;
-      if (e.otLabel) display += ` <span class="ot">(${e.otLabel})</span>`;
+      let label = e.otLabel || '';
+      if (e.isPublicHoliday) {
+        label = label ? `${label} + Public Holiday` : 'Public Holiday';
+      }
+      if (label) display += ` <span class="ot">(${label})</span>`;
       if (hourlyRate > 0) display += ` → $${earnings.toFixed(2)}`;
       html += `<div class="day" onclick="editEntry('${d}', ${i})">
         <div class="day-header"><b>${nice} | ${e.job}</b>
@@ -344,6 +363,7 @@ function editEntry(date, index) {
   document.getElementById('finish-time').value = f;
   document.getElementById('notes').value = e.notes;
   twelveMode.checked = e.is12hr;
+  publicHoliday.checked = e.isPublicHoliday || false;
   restoreSelect(e.job);
   addBtn.textContent = "UPDATE ENTRY";
   window.scrollTo(0, 0);
@@ -423,7 +443,11 @@ async function exportPDF() {
     const nice = dayObj.toLocaleDateString('en-AU', {weekday:'long', day:'numeric', month:'short'});
     week[date].forEach(e => {
       let hoursText = `${e.paid} hrs`;
-      if (e.otLabel) hoursText += ` (${e.otLabel})`;
+      let label = e.otLabel || '';
+      if (e.isPublicHoliday) {
+        label = label ? `${label} + Public Holiday` : 'Public Holiday';
+      }
+      if (label) hoursText += ` (${label})`;
       rows.push([nice, e.job, e.times, hoursText, e.notes || '']);
     });
   });
