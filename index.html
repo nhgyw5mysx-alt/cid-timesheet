@@ -332,7 +332,7 @@ function render() {
       let display = `${e.times} – <b>${e.paid} hrs</b>`;
       let label = e.otLabel || '';
       if (e.isPublicHoliday) {
-        label = label ? `${label} + Public Holiday` : 'Public Holiday';
+        label = label ? `${label} + Public Holiday Rate` : 'Public Holiday Rate';
       }
       if (label) display += ` <span class="ot">(${label})</span>`;
       if (hourlyRate > 0) display += ` → $${earnings.toFixed(2)}`;
@@ -445,7 +445,7 @@ async function exportPDF() {
       let hoursText = `${e.paid} hrs`;
       let label = e.otLabel || '';
       if (e.isPublicHoliday) {
-        label = label ? `${label} + Public Holiday` : 'Public Holiday';
+        label = label ? `${label} + Public Holiday Rate` : 'Public Holiday Rate';
       }
       if (label) hoursText += ` (${label})`;
       rows.push([nice, e.job, e.times, hoursText, e.notes || '']);
@@ -535,3 +535,4 @@ renderJobs();
 </script>
 </body>
 </html>
+``` 28
