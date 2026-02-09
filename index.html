@@ -202,7 +202,7 @@ function submitEntry() {
 
   const sM = timeToMins(start);
   const fM = timeToMins(finish);
-  const rawHours = (fM - sM + (fM < sM ? 1440 : 0)) / 60;
+  let rawHours = (fM - sM + (fM < sM ? 1440 : 0)) / 60;
 
   let normal = 0;
   let ot = 0;
@@ -210,43 +210,46 @@ function submitEntry() {
   let paid = 0;
   let otLabel = '';
 
+  // Pay categories:
+  // normal: 1x rate
+  // ot (Double Time): 2x rate
+  // ott (Double Time & Half): 2.5x rate
+
   if (is12hr) {
-    if (Math.abs(rawHours - 12) > 1) {
-      showToast("Adjusted to 12-hour shift");
-      updateFinishTime(start);
-      finish = document.getElementById('finish-time').value;
-    }
-
-    const isNight = sM >= timeToMins('18:00');
-
+    // No longer force to 12 hours; calculate based on actual rawHours
     if (isWeekday) {
+      const isNight = sM >= timeToMins('18:00');
       if (isNight) {
-        ot = 3.5;
-        ott = 8.5;
-        otLabel = '3.5 OT + 8.5 OTT';
+        ot = Math.min(3.5, rawHours);
+        ott = Math.max(0, rawHours - 3.5);
+        otLabel = `${ot.toFixed(1)} Double Time + ${ott.toFixed(1)} Double Time & Half`;
       } else {
-        normal = 8;
-        ot = 4;
-        otLabel = '8 normal + 4 OT';
+        normal = Math.min(8, rawHours);
+        ot = Math.max(0, rawHours - 8);
+        otLabel = `${normal.toFixed(1)} normal + ${ot.toFixed(1)} Double Time`;
       }
     } else if (isSaturday) {
-      ot = 12;
-      otLabel = 'all OT';
+      ot = rawHours;
+      otLabel = 'Double Time';
     } else {
-      ott = 12;
-      otLabel = 'all OTT';
+      ott = rawHours;
+      otLabel = 'Double Time & Half';
     }
-    paid = (normal + ot + ott).toFixed(2);
   } else {
     if (isSaturday || isSunday) {
-      ot = rawHours;
-      otLabel = isSunday ? 'Double Time & Half' : 'OT';
+      if (isSunday) {
+        ott = rawHours;
+        otLabel = 'OTT';
+      } else {
+        ot = rawHours;
+        otLabel = 'Double Time';
+      }
     } else {
       const dayStartMins = 7 * 60;
-      const dayEndMins   = 15.5 * 60;
+      const dayEndMins = 15.5 * 60;
       const beforeOT = Math.max(0, Math.min(fM, dayStartMins) - sM) / 60;
-      const afterOT  = Math.max(0, fM - Math.max(sM, dayEndMins)) / 60;
-      const totalOT  = beforeOT + afterOT;
+      const afterOT = Math.max(0, fM - Math.max(sM, dayEndMins)) / 60;
+      const totalOT = beforeOT + afterOT;
       const coreHours = Math.max(0, Math.min(fM, dayEndMins) - Math.max(sM, dayStartMins)) / 60;
 
       ot = totalOT;
@@ -256,9 +259,14 @@ function submitEntry() {
       } else {
         normal = coreHours > 0 ? coreHours - 0.5 : 0;
       }
-      otLabel = totalOT > 0 ? 'OT' : '';
+      otLabel = totalOT > 0 ? 'Double Time' : '';
     }
-    paid = (normal + ot).toFixed(2);
+  }
+
+  paid = (normal + ot + ott).toFixed(2);
+
+  if (isPublicHoliday) {
+    otLabel = otLabel ? `${otLabel} + Public Holiday Rate` : 'Public Holiday Rate';
   }
 
   const entry = {
@@ -306,17 +314,8 @@ function calculateEarnings(entry, rate) {
     return parseFloat(entry.paid) * 2.5 * rate;
   }
 
-  if (entry.is12hr) {
-    return (entry.normal * rate) + (entry.ot * 2 * rate) + (entry.ott * 2.5 * rate);
-  } else {
-    if (entry.isSunday) {
-      return parseFloat(entry.paid) * 2.5 * rate;
-    } else if (entry.isSaturday) {
-      return parseFloat(entry.paid) * 2 * rate;
-    } else {
-      return (entry.normal * rate) + (entry.ot * 2 * rate);
-    }
-  }
+  // Unified calculation for all modes
+  return (entry.normal * rate) + (entry.ot * 2 * rate) + (entry.ott * 2.5 * rate);
 }
 
 function render() {
@@ -331,9 +330,6 @@ function render() {
       totalEarnings += earnings;
       let display = `${e.times} – <b>${e.paid} hrs</b>`;
       let label = e.otLabel || '';
-      if (e.isPublicHoliday) {
-        label = label ? `${label} + Public Holiday Rate` : 'Public Holiday Rate';
-      }
       if (label) display += ` <span class="ot">(${label})</span>`;
       if (hourlyRate > 0) display += ` → $${earnings.toFixed(2)}`;
       html += `<div class="day" onclick="editEntry('${d}', ${i})">
@@ -444,9 +440,6 @@ async function exportPDF() {
     week[date].forEach(e => {
       let hoursText = `${e.paid} hrs`;
       let label = e.otLabel || '';
-      if (e.isPublicHoliday) {
-        label = label ? `${label} + Public Holiday Rate` : 'Public Holiday Rate';
-      }
       if (label) hoursText += ` (${label})`;
       rows.push([nice, e.job, e.times, hoursText, e.notes || '']);
     });
@@ -535,4 +528,4 @@ renderJobs();
 </script>
 </body>
 </html>
-``` 28
+```(start)
